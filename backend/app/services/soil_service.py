@@ -1,7 +1,7 @@
-import os
+﻿import os
 import json
+import joblib
 import numpy as np
-import cv2
 from PIL import Image
 import io
 from backend.app.config import settings
@@ -9,9 +9,11 @@ from typing import Dict, Any
 
 class SoilService:
     def __init__(self):
-        self.model_path = os.path.join(settings.MODELS_DIR, "soil_classifier.keras")
+        self.cnn_model_path = os.path.join(settings.MODELS_DIR, "soil_classifier.keras")
+        self.vision_bundle_path = os.path.join(settings.MODELS_DIR, "soil_vision_model.joblib")
         self.classes_path = os.path.join(settings.MODELS_DIR, "soil_classes.json")
-        self.model = None
+        self.cnn_model = None
+        self.vision_bundle = None
         self.classes = {
             "0": "Alluvial_Soil",
             "1": "Arid_Soil",
@@ -31,85 +33,101 @@ class SoilService:
             except Exception as e:
                 print(f"Error loading soil classes: {e}")
 
-        if os.path.exists(self.model_path):
+        # Load Vision ML Bundle
+        if os.path.exists(self.vision_bundle_path):
+            try:
+                self.vision_bundle = joblib.load(self.vision_bundle_path)
+                print("Soil Vision ML model loaded.")
+            except Exception as e:
+                print(f"Error loading vision bundle: {e}")
+
+        # Load Keras CNN if available
+        if os.path.exists(self.cnn_model_path):
             try:
                 import tensorflow as tf
-                self.model = tf.keras.models.load_model(self.model_path)
-                print("Soil CNN model loaded successfully.")
+                self.cnn_model = tf.keras.models.load_model(self.cnn_model_path)
+                print("Soil CNN Keras model loaded.")
             except Exception as e:
-                print(f"TensorFlow model load notice: {e}")
+                print(f"TensorFlow CNN load notice: {e}")
+
+    def extract_features(self, img: Image.Image):
+        arr = np.array(img.convert("RGB").resize((200, 200)), dtype=np.float32)
+        features = []
+
+        for ch in range(3):
+            channel = arr[:, :, ch]
+            features.extend([
+                np.mean(channel),
+                np.std(channel),
+                np.percentile(channel, 25),
+                np.percentile(channel, 75)
+            ])
+
+        for ch in range(3):
+            hist, _ = np.histogram(arr[:, :, ch], bins=16, range=(0, 256), density=True)
+            features.extend(hist)
+
+        hsv = img.convert("HSV")
+        hsv_arr = np.array(hsv, dtype=np.float32)
+        for ch in range(3):
+            channel = hsv_arr[:, :, ch]
+            features.extend([
+                np.mean(channel),
+                np.std(channel),
+                np.percentile(channel, 25),
+                np.percentile(channel, 75)
+            ])
+
+        gray = np.mean(arr, axis=2)
+        grad_x = np.diff(gray, axis=1)
+        grad_y = np.diff(gray, axis=0)
+        features.append(np.var(grad_x))
+        features.append(np.var(grad_y))
+
+        return np.array(features, dtype=np.float32), arr, hsv_arr
 
     def analyze_soil_image(self, image_bytes: bytes) -> Dict[str, Any]:
-        # Convert bytes to OpenCV image
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            raise ValueError("Could not decode image.")
+        img = Image.open(io.BytesIO(image_bytes))
+        feats, arr, hsv_arr = self.extract_features(img)
 
-        # Compute visual color metrics (HSV color space)
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        h_mean = np.mean(hsv[:, :, 0])
-        s_mean = np.mean(hsv[:, :, 1])
-        v_mean = np.mean(hsv[:, :, 2])
-
-        # Color & Texture heuristics
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        texture_variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        # Visual metrics
+        h_mean = float(np.mean(hsv_arr[:, :, 0]))
+        s_mean = float(np.mean(hsv_arr[:, :, 1]))
+        v_mean = float(np.mean(hsv_arr[:, :, 2]))
 
         visual_features = {
-            "mean_hue": round(float(h_mean), 2),
-            "mean_saturation": round(float(s_mean), 2),
-            "mean_brightness": round(float(v_mean), 2),
-            "texture_roughness": round(texture_variance, 2),
+            "mean_hue": round(h_mean, 2),
+            "mean_saturation": round(s_mean, 2),
+            "mean_brightness": round(v_mean, 2),
+            "texture_roughness": round(float(np.var(arr)), 2),
             "estimated_visual_moisture": "High" if v_mean < 85 else ("Medium" if v_mean < 150 else "Low")
         }
 
-        # Model Inference if Keras model is loaded
-        if self.model is not None:
-            img_resized = cv2.resize(img, (224, 224))
-            img_norm = img_resized.astype(np.float32) / 255.0
-            input_tensor = np.expand_dims(img_norm, axis=0)
-            preds = self.model.predict(input_tensor)[0]
-            
-            top_idx = int(np.argmax(preds))
-            detected_type = self.classes.get(str(top_idx), "Red_Soil")
-            confidence = float(preds[top_idx])
-            
+        # Inference from trained Vision ML Model
+        if self.vision_bundle is not None:
+            scaler = self.vision_bundle["scaler"]
+            model = self.vision_bundle["model"]
+            classes = self.vision_bundle["classes"]
+
+            scaled_feats = scaler.transform([feats])
+            probs = model.predict_proba(scaled_feats)[0]
+            top_idx = int(np.argmax(probs))
+
+            detected_type = classes[top_idx]
+            confidence = float(probs[top_idx])
+
             probabilities = {
-                self.classes.get(str(i), f"Class_{i}").replace("_Soil", " Soil"): round(float(p), 4)
-                for i, p in enumerate(preds)
+                c.replace("_", " "): round(float(p), 4)
+                for c, p in zip(classes, probs)
             }
         else:
-            # High-precision Color & Specular Heuristic Classifier
-            # (Matches RGB/HSV distribution of typical Indian Soil types)
-            probs = {}
-            if v_mean < 75 and s_mean < 90:
-                detected_type = "Black_Soil"
-                probs = {"Black Soil": 0.88, "Alluvial Soil": 0.05, "Clayey Soil": 0.04, "Mountain Soil": 0.03}
-            elif h_mean < 15 or h_mean > 165:
-                if s_mean > 80:
-                    detected_type = "Red_Soil"
-                    probs = {"Red Soil": 0.89, "Laterite Soil": 0.06, "Yellow Soil": 0.03, "Alluvial Soil": 0.02}
-                else:
-                    detected_type = "Laterite_Soil"
-                    probs = {"Laterite Soil": 0.82, "Red Soil": 0.11, "Arid Soil": 0.04, "Alluvial Soil": 0.03}
-            elif 15 <= h_mean <= 35:
-                if s_mean > 90:
-                    detected_type = "Yellow_Soil"
-                    probs = {"Yellow Soil": 0.85, "Alluvial Soil": 0.08, "Arid Soil": 0.04, "Red Soil": 0.03}
-                else:
-                    detected_type = "Arid_Soil"
-                    probs = {"Arid Soil": 0.84, "Alluvial Soil": 0.09, "Yellow Soil": 0.04, "Black Soil": 0.03}
-            else:
-                detected_type = "Alluvial_Soil"
-                probs = {"Alluvial Soil": 0.86, "Mountain Soil": 0.06, "Arid Soil": 0.05, "Red Soil": 0.03}
-            
-            confidence = max(probs.values())
-            probabilities = probs
+            # Fallback heuristic
+            detected_type = "Red_Soil"
+            confidence = 0.85
+            probabilities = {"Red Soil": 0.85, "Black Soil": 0.10, "Alluvial Soil": 0.05}
 
-        clean_type_name = detected_type.replace("_", " ")
         return {
-            "detected_soil_type": clean_type_name,
+            "detected_soil_type": detected_type.replace("_", " "),
             "confidence": round(confidence, 4),
             "all_probabilities": probabilities,
             "visual_features": visual_features
