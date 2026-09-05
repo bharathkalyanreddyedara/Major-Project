@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 const CropTimeline = ({ timeline, onGenerateTimeline, selectedCrop, soilType, location }) => {
   const [sowingDate, setSowingDate] = useState(

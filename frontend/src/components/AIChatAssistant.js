@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 const AIChatAssistant = ({ onSendMessage, messages, loading, activeCrop, currentStage, weather }) => {
   const [input, setInput] = useState('');

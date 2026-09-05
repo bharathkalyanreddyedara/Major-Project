@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 const CropRecommendation = ({ recommendations, onSelectCrop, selectedCrop }) => {
   if (!recommendations || recommendations.length === 0) return null;

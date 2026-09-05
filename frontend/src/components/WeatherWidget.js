@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 const WeatherWidget = ({ weather, city, setCity, onRefresh }) => {
   if (!weather) return null;

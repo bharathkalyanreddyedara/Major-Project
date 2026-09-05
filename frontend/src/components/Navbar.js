@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 const Navbar = ({ activeTab, setActiveTab, unreadCount = 0 }) => {
   const tabs = [
