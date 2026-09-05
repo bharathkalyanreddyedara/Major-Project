@@ -129,15 +129,24 @@ class RAGAssistantService:
                 print(f"Gemini API invocation error: {e}")
 
         if not answer:
-            # High-quality contextual fallback synthesis
+            # High-quality contextual extraction directly from grounded Markdown chunks
+            chunk_excerpts = []
+            for d in relevant_docs[:3]:
+                clean_text = d["text"].strip()
+                # Remove header marker for cleaner reading if present
+                clean_text = clean_text.replace("# ", "").replace("## ", "• ").replace("### ", "  - ")
+                chunk_excerpts.append(f"📖 **From `{d['source']}`:**\n{clean_text}")
+
+            extracted_knowledge = "\n\n---\n\n".join(chunk_excerpts)
+
             answer = (
-                f"Based on agricultural recommendations for **{crop_context or 'your farm'}** "
-                f"under **{soil_context or 'current soil'}** conditions:\n\n"
-                f"1. **Direct Answer:** Regarding *'{query}'*, ensure optimal soil moisture and avoid water stagnation. "
-                f"If in the vegetative or tillering stage, timely top-dressing with nitrogen and balanced irrigation is essential.\n\n"
-                f"2. **Grounded Advice:** Refer to the verified agronomic schedule. "
-                f"Maintain regular monitoring for pest thresholds and apply recommended split fertilizer doses as per your soil test.\n\n"
-                f"3. **Weather Advisory:** With current conditions ({weather_context or 'mild'}), ensure proper drainage channels and avoid foliar spraying during high winds."
+                f"### 🌾 Agronomic Advisory for **{crop_context or 'Crop'}** on **{soil_context or 'Soil'}**\n\n"
+                f"**Current Status:** {growth_stage_context or 'Vegetative Phase'} | **Weather:** {weather_context or 'Clear'}\n\n"
+                f"{extracted_knowledge}\n\n"
+                f"**Actionable Next Steps:**\n"
+                f"- Ensure proper drainage channels if heavy precipitation is forecast.\n"
+                f"- Verify soil moisture prior to top-dressing or fertigation.\n"
+                f"- Adhere to stage-specific NPK split dosages and scout for ETL pest thresholds."
             )
 
         return {
