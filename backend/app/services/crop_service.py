@@ -1,4 +1,4 @@
-import os
+﻿import os
 import joblib
 import numpy as np
 import pandas as pd
@@ -25,7 +25,13 @@ class CropService:
             "Groundnuts": {"season": "Kharif / Zaid", "water": "Low-Medium (400-600 mm)", "duration": 110, "opt_ph": (5.5, 7.0), "opt_soil": ["Sandy", "Red", "Loamy"]},
             "Millets": {"season": "Kharif", "water": "Low (300-450 mm)", "duration": 90, "opt_ph": (5.0, 7.5), "opt_soil": ["Red", "Sandy", "Laterite", "Arid"]},
             "Pomegranate": {"season": "All Seasons", "water": "Low-Medium (drip)", "duration": 210, "opt_ph": (6.5, 7.5), "opt_soil": ["Alluvial", "Sandy", "Black", "Red"]},
-            "Pulses": {"season": "Rabi / Kharif", "water": "Low (350-500 mm)", "duration": 95, "opt_ph": (6.0, 7.5), "opt_soil": ["Loamy", "Alluvial", "Black", "Red"]}
+            "Pulses": {"season": "Rabi / Kharif", "water": "Low (350-500 mm)", "duration": 95, "opt_ph": (6.0, 7.5), "opt_soil": ["Loamy", "Alluvial", "Black", "Red"]},
+            "Chickpea": {"season": "Rabi", "water": "Low (250-400 mm)", "duration": 100, "opt_ph": (6.0, 7.5), "opt_soil": ["Loamy", "Black", "Alluvial"]},
+            "Coffee": {"season": "Perennial", "water": "High (1500-2000 mm)", "duration": 240, "opt_ph": (5.5, 6.5), "opt_soil": ["Laterite", "Red", "Mountain"]},
+            "Jute": {"season": "Kharif", "water": "High (1200-1500 mm)", "duration": 120, "opt_ph": (6.0, 7.5), "opt_soil": ["Alluvial", "Clayey", "Loamy"]},
+            "Coconut": {"season": "Perennial", "water": "High", "duration": 365, "opt_ph": (5.2, 8.0), "opt_soil": ["Alluvial", "Sandy", "Laterite"]},
+            "Apple": {"season": "Temperate", "water": "Medium", "duration": 180, "opt_ph": (5.5, 6.5), "opt_soil": ["Mountain", "Loamy"]},
+            "Mango": {"season": "Summer", "water": "Medium", "duration": 150, "opt_ph": (5.5, 7.5), "opt_soil": ["Alluvial", "Red", "Loamy"]}
         }
 
     def load_model(self):
@@ -60,26 +66,36 @@ class CropService:
         # 2. ML Model Scoring if available
         if self.bundle is not None:
             try:
-                soil_classes = self.bundle["soil_classes"]
+                soil_classes = self.bundle.get("soil_classes", ["Alluvial", "Black", "Red", "Laterite", "Arid", "Mountain", "Yellow"])
                 soil_type_query = soil_type.lower()
                 
-                # Best match soil class
-                soil_enc_val = 0
-                if soil_type_query in soil_classes:
-                    soil_enc_val = soil_classes.index(soil_type_query)
+                soil_enc_val = 1
+                for idx, sc in enumerate(soil_classes):
+                    if sc.lower() in soil_type_query:
+                        soil_enc_val = idx
+                        break
+
+                n_to_p = soil.nitrogen / (soil.phosphorus + 1e-4)
+                n_to_k = soil.nitrogen / (soil.potassium + 1e-4)
+                p_to_k = soil.phosphorus / (soil.potassium + 1e-4)
+                npk_sum = soil.nitrogen + soil.phosphorus + soil.potassium
                 
-                features = [
-                    soil.nitrogen,
-                    soil.phosphorus,
-                    soil.potassium,
-                    soil.ph,
-                    temperature,
-                    humidity,
-                    rainfall,
-                    soil_enc_val
-                ]
+                # Check feature count
+                feature_cols = self.bundle.get("feature_cols", [])
+                if len(feature_cols) == 12:
+                    features = [
+                        soil.nitrogen, soil.phosphorus, soil.potassium, soil.ph,
+                        temperature, humidity, rainfall, soil_enc_val,
+                        n_to_p, n_to_k, p_to_k, npk_sum
+                    ]
+                else:
+                    features = [
+                        soil.nitrogen, soil.phosphorus, soil.potassium, soil.ph,
+                        temperature, humidity, rainfall, soil_enc_val
+                    ]
                 
-                features_scaled = self.bundle["scaler"].transform([features])
+                df_feat = pd.DataFrame([features], columns=feature_cols if feature_cols else None)
+                features_scaled = self.bundle["scaler"].transform(df_feat)
                 probs = self.bundle["model"].predict_proba(features_scaled)[0]
                 crop_classes = self.bundle["crop_classes"]
                 
@@ -87,12 +103,12 @@ class CropService:
                     c_name = crop_classes[idx]
                     crop_scores[c_name] = float(p)
             except Exception as e:
-                print(f"ML inference fallback: {e}")
+                print(f"ML inference notice: {e}")
 
-        # If model didn't cover or fallback needed, ensure common agronomy crops
+        # Ensure all crop profiles have baseline representation
         for c in self.crop_profiles.keys():
             if c not in crop_scores:
-                crop_scores[c] = 0.15
+                crop_scores[c] = 0.05
 
         # 3. Agronomic Hybrid Scoring (Penalize / Boost based on pH & Soil Type suitability)
         recommendations: List[RecommendedCrop] = []
@@ -109,13 +125,13 @@ class CropService:
             ph_min, ph_max = profile["opt_ph"]
             ph_penalty = 0.0
             if soil.ph < ph_min:
-                ph_penalty = (ph_min - soil.ph) * 0.1
+                ph_penalty = (ph_min - soil.ph) * 0.15
             elif soil.ph > ph_max:
-                ph_penalty = (soil.ph - ph_max) * 0.1
+                ph_penalty = (soil.ph - ph_max) * 0.15
 
-            soil_match_boost = 0.15 if any(s.lower() in soil_type.lower() for s in profile["opt_soil"]) else -0.1
+            soil_match_boost = 0.15 if any(s.lower() in soil_type.lower() for s in profile["opt_soil"]) else -0.05
 
-            final_score = max(0.05, min(0.98, base_prob + soil_match_boost - ph_penalty))
+            final_score = max(0.05, min(0.99, base_prob * 0.7 + soil_match_boost * 0.2 - ph_penalty * 0.1 + 0.1))
             
             fert_info = fertilizer_service.recommend(
                 crop=crop_name,
@@ -137,7 +153,7 @@ class CropService:
             ))
 
         # Sort by suitability score descending
-        recommendations.sort(key=lambda x: x.suitability_score, reverse=True)
+        recommendations.sort(key=lambda x: (x.confidence, x.suitability_score), reverse=True)
         top_recommendations = recommendations[:6]
 
         return CropRecommendationResponse(

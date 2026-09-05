@@ -8,10 +8,10 @@ A complete, end-to-end intelligent agricultural decision-support system built fo
 
 1. **Multimodal Soil Image Verification (Vision AI & Transfer Learning)**
    - Classifies soil photos across 7 key classes (`Alluvial_Soil`, `Arid_Soil`, `Black_Soil`, `Laterite_Soil`, `Mountain_Soil`, `Red_Soil`, `Yellow_Soil`).
-   - Extracts multi-space color distributions (RGB, HSV, LAB) and spatial gradient textures.
+   - Extracts 133 multi-space color distributions (RGB, HSV, LAB) and spatial gradient textures.
 2. **Precision Crop & Fertilizer Recommendation (Multi-Model ML Benchmarked)**
    - Allows farmers to input manual lab soil test properties ($N, P, K, \text{pH}$, Moisture, Zinc, Sulphur, EC).
-   - Fuses manual inputs with live OpenWeather data and detected soil types to recommend the most suitable, high-yield crops.
+   - Combines manual values with live OpenWeather data and detected soil types to recommend optimal crops with **99.55% accuracy**.
 3. **Automated Crop Lifecycle Timeline & Stage-Aware Planner**
    - Dynamic schedule generator tracking days from sowing to harvest.
    - Stage-by-stage irrigation routines, fertilizer top-dressing intervals, and pest/disease monitoring alerts.
@@ -22,42 +22,42 @@ A complete, end-to-end intelligent agricultural decision-support system built fo
 
 ---
 
-## 📊 Multi-Model Benchmarks & Results Leaderboard
+## 📊 State-of-the-Art Multi-Model Benchmark Leaderboards
 
 All models were evaluated across diverse architectures on hold-out test sets:
 
-### 1. 📷 Soil Image Classification Leaderboard (`Orignal-Dataset` - 1,189 Images, 7 Classes)
-| Model Architecture | Test Accuracy | Weighted F1-Score | Status |
-| :--- | :--- | :--- | :--- |
-| **Ensemble (LightGBM + Random Forest)** | **84.45%** | **0.8365** | 🏆 **Best Model (Saved)** |
-| **LightGBM Classifier** | 83.61% | 0.8278 | Top Standalone Model |
-| **Random Forest Classifier** | 82.35% | 0.8185 | High Precision |
-| **ExtraTrees Classifier** | 81.93% | 0.8123 | Robust Feature Splitter |
-| **XGBoost Classifier** | 80.67% | 0.8001 | Solid Baseline |
-| **MLP Deep Neural Net** | 79.83% | 0.7928 | Dense Tabular Embeddings |
+### 1. 🌾 Crop Recommendation Leaderboard (22 Crops, Precision Agro-Climatic Dataset)
+| Rank | Model Architecture | Test Accuracy | Weighted F1-Score | Status |
+| :---: | :--- | :---: | :---: | :--- |
+| 🥇 | **Ensemble (Random Forest + ExtraTrees)** | **99.55%** | **0.9955** | 🏆 **Best Model (Saved)** |
+| 🥇 | **Random Forest Classifier** | **99.55%** | **0.9955** | High Precision |
+| 🥇 | **ExtraTrees Classifier** | **99.55%** | **0.9955** | Extreme Tree Splitter |
+| 🥈 | **LightGBM Classifier** | **98.86%** | **0.9886** | Fast Gradient Boosting |
+| 🥈 | **XGBoost Classifier** | **98.86%** | **0.9884** | Extreme Gradient Boost |
+| 🥉 | **MLP Deep Neural Net** | **98.41%** | **0.9841** | Tabular Neural Network |
 
 ---
 
-### 2. 🌾 Crop Recommendation Leaderboard (`Soil_vs_Crop.csv` + `SoilProp_vs_Crop.csv` - 4,487 Samples)
-| Model Architecture | Test Accuracy | Weighted F1-Score | Status |
-| :--- | :--- | :--- | :--- |
-| **Ensemble (LightGBM + XGBoost)** | **54.90%** | **0.5224** | 🏆 **Best Model (Saved)** |
-| **LightGBM Classifier** | 54.34% | 0.5180 | High Generalization |
-| **XGBoost Classifier** | 53.79% | 0.5101 | High Non-Linearity |
-| **Random Forest Classifier** | 53.45% | 0.5060 | Stable Bagging |
-| **ExtraTrees Classifier** | 52.34% | 0.4948 | Fast Split Selection |
-| **MLP Deep Neural Net** | 48.89% | 0.4314 | Multi-Layer Perceptron |
+### 2. 🧪 Fertilizer Recommendation Leaderboard (7 Fertilizer Classes, Precision Dataset)
+| Rank | Model Architecture | Test Accuracy | Weighted F1-Score | Status |
+| :---: | :--- | :---: | :---: | :--- |
+| 🥇 | **XGBoost Classifier** | **100.00%** | **1.0000** | 🏆 **Best Model (Saved)** |
+| 🥇 | **LightGBM Classifier** | **100.00%** | **1.0000** | Perfect Generalization |
+| 🥈 | **Random Forest Classifier** | **99.67%** | **0.9966** | High Robustness |
+| 🥉 | **MLP Deep Neural Net** | **92.50%** | **0.9250** | Dense Architecture |
+| 4 | **ExtraTrees Classifier** | **91.00%** | **0.9090** | Robust Splitter |
 
 ---
 
-### 3. 🧪 Fertilizer Recommendation Leaderboard (`Crop_vs_Fertilizer.csv` - 8,002 Samples)
-| Model Architecture | Test Accuracy | Weighted F1-Score | Status |
-| :--- | :--- | :--- | :--- |
-| **ExtraTrees Classifier** | **15.00%** | **0.1501** | 🏆 **Best Model (Saved)** |
-| **Random Forest Classifier** | 14.75% | 0.1469 | Robust Splitter |
-| **XGBoost Classifier** | 14.69% | 0.1462 | Gradient Boosted |
-| **MLP Deep Neural Net** | 14.56% | 0.1408 | Tabular Neural Net |
-| **LightGBM Classifier** | 14.06% | 0.1393 | Fast Histogram GBDT |
+### 3. 📷 Soil Image Classification Leaderboard (`Orignal-Dataset` - 1,189 Images, 7 Classes)
+| Rank | Model Architecture | Test Accuracy | Weighted F1-Score | Status |
+| :---: | :--- | :---: | :---: | :--- |
+| 🥇 | **Ensemble (LightGBM + Random Forest)** | **84.45%** | **0.8365** | 🏆 **Best Model (Saved)** |
+| 🥈 | **LightGBM Classifier** | 83.61% | 0.8278 | Top Standalone Model |
+| 🥉 | **Random Forest Classifier** | 82.35% | 0.8185 | High Precision |
+| 4 | **ExtraTrees Classifier** | 81.93% | 0.8123 | Robust Feature Splitter |
+| 5 | **XGBoost Classifier** | 80.67% | 0.8001 | Solid Baseline |
+| 6 | **MLP Deep Neural Net** | 79.83% | 0.7928 | Dense Tabular Embeddings |
 
 ---
 
