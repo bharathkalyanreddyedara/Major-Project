@@ -1,13 +1,22 @@
+﻿"""
+Multi-Model Benchmark & Training: Crop Recommendation
+Benchmarks XGBoost, LightGBM, MLP Neural Network, ExtraTrees, and Stacking Ensemble.
+Automatically selects and exports the highest-performing model.
+"""
+
 import os
 import joblib
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
+from sklearn.metrics import accuracy_score, f1_score
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
-def train_crop_model(
+def benchmark_and_train_crop_models(
     dataset1_path="backend/data/Soil_vs_Crop.csv",
     dataset2_path="backend/data/SoilProp_vs_Crop.csv",
     model_output_dir="backend/models"
@@ -16,9 +25,11 @@ def train_crop_model(
         dataset1_path = "Soil_vs_Crop.csv"
         dataset2_path = "SoilProp_vs_Crop.csv"
 
-    print("Loading Crop Datasets...")
-    os.makedirs(model_output_dir, exist_ok=True)
-    
+    print("=" * 60)
+    print(">>> MULTI-MODEL BENCHMARK: CROP RECOMMENDATION")
+    print("=" * 60)
+
+    # 1. Load Data
     df1 = pd.read_csv(dataset1_path)
     df1.columns = [c.strip() for c in df1.columns]
     
@@ -59,19 +70,23 @@ def train_crop_model(
         })
         records.append(clean_df2)
 
-    combined_df = pd.concat(records, ignore_index=True)
-    print("Total Combined Training Samples:", len(combined_df))
-    print("Unique Crops:", combined_df["Crop"].nunique())
+    df = pd.concat(records, ignore_index=True)
+
+    # 2. Feature Engineering
+    df["N_to_P"] = df["N"] / (df["P"] + 1e-4)
+    df["N_to_K"] = df["N"] / (df["K"] + 1e-4)
+    df["P_to_K"] = df["P"] / (df["K"] + 1e-4)
+    df["NPK_Sum"] = df["N"] + df["P"] + df["K"]
 
     soil_encoder = LabelEncoder()
-    combined_df["SoilType_Encoded"] = soil_encoder.fit_transform(combined_df["SoilType"].astype(str))
+    df["SoilType_Encoded"] = soil_encoder.fit_transform(df["SoilType"].astype(str))
     
     crop_encoder = LabelEncoder()
-    combined_df["Crop_Encoded"] = crop_encoder.fit_transform(combined_df["Crop"])
+    df["Crop_Encoded"] = crop_encoder.fit_transform(df["Crop"])
 
-    feature_cols = ["N", "P", "K", "pH", "Temperature", "Humidity", "Rainfall", "SoilType_Encoded"]
-    X = combined_df[feature_cols]
-    y = combined_df["Crop_Encoded"]
+    feature_cols = ["N", "P", "K", "pH", "Temperature", "Humidity", "Rainfall", "SoilType_Encoded", "N_to_P", "N_to_K", "P_to_K", "NPK_Sum"]
+    X = df[feature_cols]
+    y = df["Crop_Encoded"]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
@@ -79,27 +94,80 @@ def train_crop_model(
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    print("Training Random Forest Crop Classifier...")
-    model = RandomForestClassifier(n_estimators=150, max_depth=16, random_state=42, n_jobs=-1)
-    model.fit(X_train_scaled, y_train)
+    # 3. Model Candidates
+    models = {
+        "XGBoost": XGBClassifier(n_estimators=200, learning_rate=0.08, max_depth=6, random_state=42, n_jobs=-1, eval_metric="mlogloss"),
+        "LightGBM": LGBMClassifier(n_estimators=200, learning_rate=0.08, max_depth=6, random_state=42, n_jobs=-1, verbose=-1),
+        "MLP Neural Net": MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=400, activation="relu", random_state=42, early_stopping=True),
+        "ExtraTrees": ExtraTreesClassifier(n_estimators=250, max_depth=20, random_state=42, n_jobs=-1),
+        "RandomForest": RandomForestClassifier(n_estimators=250, max_depth=20, random_state=42, n_jobs=-1)
+    }
 
-    y_pred = model.predict(X_test_scaled)
-    acc = accuracy_score(y_test, y_pred)
-    print("Crop Model Test Accuracy: {:.2f}%".format(acc * 100))
+    results = {}
+    best_name = None
+    best_acc = 0.0
+    best_model = None
 
-    model_bundle = {
-        "model": model,
+    print(f"\nEvaluating {len(models)} model architectures...")
+    print(f"{'Model Architecture':<20} | {'Accuracy':<10} | {'Weighted F1':<12}")
+    print("-" * 48)
+
+    for name, m in models.items():
+        m.fit(X_train_scaled, y_train)
+        preds = m.predict(X_test_scaled)
+        acc = accuracy_score(y_test, preds)
+        f1 = f1_score(y_test, preds, average="weighted")
+        results[name] = {"accuracy": acc, "f1": f1, "model": m}
+        print(f"{name:<20} | {acc * 100:>8.2f}% | {f1:>10.4f}")
+
+        if acc > best_acc:
+            best_acc = acc
+            best_name = name
+            best_model = m
+
+    # Stacking / Voting Ensemble
+    sorted_models = sorted(results.items(), key=lambda x: x[1]["accuracy"], reverse=True)
+    top1_name, top1_obj = sorted_models[0][0], sorted_models[0][1]["model"]
+    top2_name, top2_obj = sorted_models[1][0], sorted_models[1][1]["model"]
+
+    ensemble = VotingClassifier(
+        estimators=[(top1_name, top1_obj), (top2_name, top2_obj)],
+        voting="soft",
+        n_jobs=-1
+    )
+    ensemble.fit(X_train_scaled, y_train)
+    ens_preds = ensemble.predict(X_test_scaled)
+    ens_acc = accuracy_score(y_test, ens_preds)
+    ens_f1 = f1_score(y_test, ens_preds, average="weighted")
+    print(f"{'Ensemble (Top-2)':<20} | {ens_acc * 100:>8.2f}% | {ens_f1:>10.4f}")
+
+    if ens_acc >= best_acc:
+        best_name = f"Ensemble ({top1_name} + {top2_name})"
+        best_acc = ens_acc
+        best_model = ensemble
+
+    print("=" * 60)
+    print(f"[BEST CROP MODEL]: {best_name} with {best_acc * 100:.2f}% Test Accuracy!")
+    print("=" * 60)
+
+    # Export Bundle
+    os.makedirs(model_output_dir, exist_ok=True)
+    bundle = {
+        "model": best_model,
         "scaler": scaler,
         "soil_encoder": soil_encoder,
         "crop_encoder": crop_encoder,
         "feature_cols": feature_cols,
         "crop_classes": list(crop_encoder.classes_),
-        "soil_classes": list(soil_encoder.classes_)
+        "soil_classes": list(soil_encoder.classes_),
+        "best_model_name": best_name,
+        "accuracy": best_acc,
+        "leaderboard": {k: {"accuracy": v["accuracy"], "f1": v["f1"]} for k, v in results.items()}
     }
 
     bundle_path = os.path.join(model_output_dir, "crop_recommender.joblib")
-    joblib.dump(model_bundle, bundle_path)
-    print("Model bundle saved to:", bundle_path)
+    joblib.dump(bundle, bundle_path, compress=3)
+    print(f"Exported top model bundle to: {bundle_path}\n")
 
 if __name__ == "__main__":
-    train_crop_model()
+    benchmark_and_train_crop_models()
