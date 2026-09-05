@@ -1,0 +1,21 @@
+# Agricultural Knowledge Base: Soil Health & Fertilizer Practices
+
+## Soil Properties Interpretation:
+- Soil pH:
+  - < 5.5: Strongly Acidic. Apply Agricultural Lime (CaCO3) or Dolomite to increase pH.
+  - 6.0 - 7.5: Neutral / Optimum for most cereal and cash crops.
+  - > 8.0: Alkaline / Calcareous. Apply Gypsum (CaSO4.2H2O) and organic farmyard manure to lower pH.
+- Nitrogen (N):
+  - Low (< 140 kg/ha): Increase Urea application in split doses.
+  - High (> 280 kg/ha): Reduce Nitrogen application to prevent lodging and succulence to pests.
+- Phosphorus (P):
+  - Low (< 10 kg/ha): Apply DAP or Single Super Phosphate (SSP) at root zone.
+- Potassium (K):
+  - Low (< 110 kg/ha): Apply Muriate of Potash (MOP) or Potassium Sulphate.
+
+## Soil Classification & Suitability:
+- Alluvial Soil: Highly fertile, rich in potash and humus. Best for Rice, Wheat, Sugarcane, Maize, Pulses.
+- Black Soil (Regur): Rich in clay, calcium, carbonate, magnesium, potash. Ideal for Cotton, Soybean, Wheat, Millets.
+- Red Soil: Porous, friable, deficient in nitrogen and humus. Excellent for Groundnut, Millets, Pulses, Tobacco with proper irrigation.
+- Laterite Soil: Rich in iron and aluminium, acidic in nature. Suitable for Cashew, Tea, Coffee, Rubber, and Millets.
+- Arid / Sandy Soil: Coarse texture, high salinity, low water retention. Suitable for Barley, Millets (Bajra), Dates with drip irrigation.

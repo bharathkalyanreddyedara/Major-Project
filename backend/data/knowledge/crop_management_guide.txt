@@ -1,0 +1,31 @@
+# Agricultural Knowledge Base: Crop Cultivation & Management Guide
+
+## 1. Rice (Paddy) Cultivation
+- Ideal Soil: Clayey loam, Alluvial, or Black soil with pH between 5.5 and 7.0.
+- Water Management: Requires standing water (2-5 cm) from transplanting up to grain filling. Drain water 10-14 days before harvest.
+- Fertilizer Regimen: 100-120 kg N, 50-60 kg P2O5, 40-50 kg K2O per hectare. Apply full P, K, and 1/3rd N as basal dose. Apply 1/3rd N at tillering (25 DAT) and 1/3rd N at panicle initiation (45 DAT).
+- Common Pests: Stem borer (use Cartap hydrochloride or pheromone traps), Brown planthopper (maintain alternate wetting and drying, spray Pymetrozine), Blast disease (spray Tricyclazole 75% WP).
+
+## 2. Wheat Cultivation
+- Ideal Soil: Well-drained fertile loamy, alluvial soil with pH 6.0 to 7.5.
+- Critical Irrigation Stages:
+  1. Crown Root Initiation (CRI) at 20-25 days after sowing (DAS) - Most critical!
+  2. Tillering stage (40-45 DAS)
+  3. Jointing stage (60-65 DAS)
+  4. Flowering/Heading stage (80-85 DAS)
+  5. Milk stage (100-105 DAS)
+  6. Dough stage (115-120 DAS)
+- Fertilizer: 120 kg N, 60 kg P2O5, 40 kg K2O/ha. Basal dose: Full P & K + 1/2 N. Top-dress remaining Nitrogen in 2 split doses.
+- Disease Alert: Yellow (stripe) rust, Brown rust. Apply Propiconazole 25% EC at initial appearance.
+
+## 3. Cotton Farming
+- Ideal Soil: Deep Black Cotton soil (Regur) or fertile sandy loam with high water holding capacity and pH 6.0 - 8.0.
+- Spacing: 90x60 cm for Bt hybrids.
+- Nutrition: 120-150 kg N, 60 kg P2O5, 60 kg K2O/ha + 25 kg Zinc Sulphate. Avoid excessive early nitrogen to prevent vegetative luxuriant growth.
+- Pest Management: Pink bollworm, Whiteflies, Jassids. Use yellow sticky traps, light traps, and spray Flonicamid or Neem-based bio-pesticides.
+
+## 4. Maize Cultivation
+- Ideal Soil: Well-aerated loamy sand to clay loam with pH 5.8 - 7.5.
+- Critical stages for moisture: Tasseling and silking stages.
+- Fertilizer: 120 kg N, 60 kg P, 50 kg K / ha. Apply Zinc Sulphate 25 kg/ha if deficiency is observed.
+- Major Pest: Fall Armyworm (Spodoptera frugiperda). Apply Chlorantraniliprole 18.5 SC or Metarhizium anisopliae in early whorl stage.
