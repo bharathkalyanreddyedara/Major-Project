@@ -15,8 +15,9 @@ function App() {
   const [city, setCity] = useState('Hyderabad');
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
 
-  // Soil and Manual input state
+  // Dynamic Soil and Lab Parameters State
   const [soilData, setSoilData] = useState({
     nitrogen: 90,
     phosphorus: 42,
@@ -35,44 +36,36 @@ function App() {
   const [timeline, setTimeline] = useState(null);
   const [notifications, setNotifications] = useState([]);
 
-  // Chat State
+  // Live Chat State
   const [chatMessages, setChatMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hello! I am your AI Agricultural Knowledge Assistant. Ask me anything about soil health, fertilizer scheduling, crop diseases, or current weather advisories.',
+      content: 'Hello! I am your AI Agricultural Knowledge Assistant. Ask me anything about crop cultivation, stage-specific fertilizer doses, pest management, or current weather impacts.',
       sources: []
     }
   ]);
   const [chatLoading, setChatLoading] = useState(false);
 
-  // 1. Fetch Initial Weather & Notifications
+  // 1. Fetch Dynamic Weather & Notifications
   const fetchWeatherAndAlerts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/weather?city=${city}`);
+      const res = await fetch(`${API_BASE}/weather?city=${encodeURIComponent(city)}`);
       if (res.ok) {
         const data = await res.json();
         setWeather(data);
       }
     } catch (e) {
-      // Fallback
-      setWeather({
-        temperature: 28.5,
-        humidity: 62,
-        rainfall: 0,
-        weather_condition: 'Partly Sunny',
-        city: city,
-        is_live: false
-      });
+      console.log('Weather fetch notice:', e);
     }
 
     try {
-      const notifRes = await fetch(`${API_BASE}/notifications?city=${city}`);
+      const notifRes = await fetch(`${API_BASE}/notifications?city=${encodeURIComponent(city)}`);
       if (notifRes.ok) {
         const notifs = await notifRes.json();
         setNotifications(notifs);
       }
     } catch (e) {
-      console.log('Using default notifications');
+      console.log('Notifications notice:', e);
     }
   };
 
@@ -80,8 +73,9 @@ function App() {
     fetchWeatherAndAlerts();
   }, []);
 
-  // 2. Analyze Soil Image (CNN)
+  // 2. Real-Time Image Feature Extraction & Classification
   const handleAnalyzeImage = async (file) => {
+    setImageLoading(true);
     const formData = new FormData();
     formData.append('file', file);
 
@@ -94,18 +88,25 @@ function App() {
         const data = await res.json();
         setCnnResult(data);
         if (data.detected_soil_type) {
+          const cleanName = data.detected_soil_type.replace(' Soil', '').trim();
           setSoilData(prev => ({
             ...prev,
-            soil_type: data.detected_soil_type.replace(' Soil', '')
+            soil_type: cleanName
           }));
         }
+      } else {
+        const err = await res.json();
+        alert(`Error analyzing image: ${err.detail || 'Server error'}`);
       }
     } catch (e) {
-      console.error('Image analysis error:', e);
+      console.error('Soil analysis error:', e);
+      alert('Unable to connect to backend server. Make sure uvicorn is running on port 8000.');
+    } finally {
+      setImageLoading(false);
     }
   };
 
-  // 3. Get Crop Recommendations
+  // 3. Dynamic Crop Recommendations
   const handleGetRecommendations = async () => {
     setLoading(true);
     try {
@@ -124,15 +125,22 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         setRecommendations(data.recommendations || []);
+        if (data.recommendations && data.recommendations.length > 0) {
+          setSelectedCrop(data.recommendations[0].crop_name);
+        }
+      } else {
+        const err = await res.json();
+        alert(`Recommendation error: ${err.detail || 'Server error'}`);
       }
     } catch (e) {
       console.error('Crop recommendation error:', e);
+      alert('Could not fetch recommendations. Ensure backend is running.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 4. Generate Cultivation Timeline
+  // 4. Dynamic Timeline Generator
   const handleGenerateTimeline = async (cropName, sowingDate = new Date().toISOString().split('T')[0]) => {
     setSelectedCrop(cropName);
     try {
@@ -157,7 +165,7 @@ function App() {
     }
   };
 
-  // 5. Send Chat Query to RAG Gemini Assistant
+  // 5. Live RAG Chat Query to Agricultural Assistant
   const handleSendMessage = async (queryText) => {
     const userMsg = { role: 'user', content: queryText };
     setChatMessages(prev => [...prev, userMsg]);
@@ -170,8 +178,8 @@ function App() {
         body: JSON.stringify({
           query: queryText,
           crop_context: selectedCrop,
-          soil_context: `${soilData.soil_type} Soil (pH: ${soilData.ph}, N: ${soilData.nitrogen})`,
-          growth_stage_context: timeline?.current_stage || 'Vegetative Stage',
+          soil_context: `${soilData.soil_type} Soil (pH: ${soilData.ph}, N: ${soilData.nitrogen}, P: ${soilData.phosphorus}, K: ${soilData.potassium})`,
+          growth_stage_context: timeline?.current_stage || 'Active Field Growth',
           weather_context: `${weather?.temperature}°C, ${weather?.weather_condition}`,
           history: chatMessages
         })
@@ -193,7 +201,7 @@ function App() {
         ...prev,
         {
           role: 'assistant',
-          content: 'Unable to reach the assistant server. Please ensure the backend server is running.',
+          content: 'Unable to connect to AI server. Please make sure the backend is active at port 8000.',
           sources: []
         }
       ]);
@@ -228,6 +236,7 @@ function App() {
               onAnalyzeImage={handleAnalyzeImage}
               onGetRecommendations={handleGetRecommendations}
               loading={loading}
+              imageLoading={imageLoading}
             />
             <CropRecommendation
               recommendations={recommendations}
@@ -242,6 +251,8 @@ function App() {
             timeline={timeline}
             onGenerateTimeline={handleGenerateTimeline}
             selectedCrop={selectedCrop}
+            soilType={soilData.soil_type}
+            location={city}
           />
         )}
 
