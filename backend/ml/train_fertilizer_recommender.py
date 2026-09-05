@@ -1,4 +1,4 @@
-﻿"""
+"""
 Precision Fertilizer Recommendation Multi-Model Benchmark
 Trained on standard multi-class nutrient recommendation dataset across 7 fertilizers.
 Benchmarks RandomForest, ExtraTrees, XGBoost, LightGBM, and MLP Neural Net.

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Precision Crop Recommendation Multi-Model Benchmark
 Trained on standard ICAR/FAO agro-climatic dataset across 22 crops.
 Benchmarks RandomForest, ExtraTrees, XGBoost, LightGBM, and MLP Neural Net.

@@ -1,4 +1,4 @@
-﻿"""
+"""
 High-Accuracy Agricultural Dataset & Benchmark Pipeline
 Downloads/Prepares verified standard Agricultural Datasets:
 1. Precision Crop Recommendation Dataset (22 Crops, N, P, K, temp, humidity, pH, rainfall) -> 99%+ Accuracy

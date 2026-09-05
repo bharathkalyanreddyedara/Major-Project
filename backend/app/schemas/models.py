@@ -1,12 +1,14 @@
-from pydantic import BaseModel, Field
+﻿from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 # Soil & Manual Properties
 class SoilAnalysisResponse(BaseModel):
     detected_soil_type: str
     confidence: float
-    all_probabilities: Dict[str, float]
-    visual_features: Dict[str, Any]
+    is_valid_soil: bool = True
+    rejection_reason: Optional[str] = None
+    all_probabilities: Dict[str, float] = {}
+    visual_features: Dict[str, Any] = {}
 
 class ManualSoilProperties(BaseModel):
     nitrogen: float = Field(..., description="Nitrogen content (N) in kg/ha or ppm", example=90.0)

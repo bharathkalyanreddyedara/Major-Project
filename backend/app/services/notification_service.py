@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import List, Dict, Any
 from backend.app.services.weather_service import weather_service
 

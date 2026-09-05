@@ -1,4 +1,4 @@
-﻿"""
+"""
 Robust, Regularized Agricultural AI Benchmark Pipeline
 Applies realistic agricultural field noise (Gaussian sensor jitter),
 L1/L2 regularization, tree-depth constraints, and 5-Fold Stratified Cross-Validation.

@@ -87,7 +87,7 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         setCnnResult(data);
-        if (data.detected_soil_type) {
+        if (data.is_valid_soil && data.detected_soil_type) {
           const cleanName = data.detected_soil_type.replace(' Soil', '').trim();
           setSoilData(prev => ({
             ...prev,

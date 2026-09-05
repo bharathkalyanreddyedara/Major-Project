@@ -64,48 +64,65 @@ const SoilAnalysis = ({
         )}
 
         {cnnResult && (
-          <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#f0fdf4', borderRadius: '12px', border: '1.5px solid #86efac' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <div>
-                <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#14532d' }}>
-                  Detected: {cnnResult.detected_soil_type}
+          cnnResult.is_valid_soil === false ? (
+            <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#fef2f2', borderRadius: '12px', border: '1.5px solid #fca5a5' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                <div>
+                  <span style={{ fontSize: '1rem', fontWeight: '800', color: '#991b1b' }}>
+                    Non-Soil Image Detected
+                  </span>
+                  <div style={{ fontSize: '0.75rem', color: '#b91c1c' }}>Domain Verification: Out-of-Distribution</div>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: '#7f1d1d', margin: '0.5rem 0 0 0', lineHeight: 1.5 }}>
+                {cnnResult.rejection_reason || 'The uploaded photo does not match natural soil or agricultural land characteristics. Please upload a clear photo of your field soil.'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#f0fdf4', borderRadius: '12px', border: '1.5px solid #86efac' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <div>
+                  <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#14532d' }}>
+                    Detected: {cnnResult.detected_soil_type}
+                  </span>
+                  <div style={{ fontSize: '0.75rem', color: '#166534' }}>Verified against 7 Agro-Soil Classes</div>
+                </div>
+                <span className="badge badge-green" style={{ fontSize: '0.85rem', padding: '4px 12px' }}>
+                  {(cnnResult.confidence * 100).toFixed(1)}% Match
                 </span>
-                <div style={{ fontSize: '0.75rem', color: '#166534' }}>Verified against 7 Agro-Soil Classes</div>
               </div>
-              <span className="badge badge-green" style={{ fontSize: '0.85rem', padding: '4px 12px' }}>
-                {(cnnResult.confidence * 100).toFixed(1)}% Match
-              </span>
-            </div>
 
-            {/* Dynamic Visual Pixel Properties */}
-            {cnnResult.visual_features && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', margin: '0.75rem 0', background: 'white', padding: '0.6rem', borderRadius: '8px', border: '1px solid #bbf7d0', fontSize: '0.75rem', color: '#334155' }}>
-                <div>🎨 <b>Hue:</b> {cnnResult.visual_features.mean_hue}</div>
-                <div>💡 <b>Brightness:</b> {cnnResult.visual_features.mean_brightness}</div>
-                <div>🌊 <b>Moisture:</b> {cnnResult.visual_features.estimated_visual_moisture}</div>
-              </div>
-            )}
+              {/* Dynamic Visual Pixel Properties */}
+              {cnnResult.visual_features && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', margin: '0.75rem 0', background: 'white', padding: '0.6rem', borderRadius: '8px', border: '1px solid #bbf7d0', fontSize: '0.75rem', color: '#334155' }}>
+                  <div>🎨 <b>Hue:</b> {cnnResult.visual_features.mean_hue}</div>
+                  <div>💡 <b>Brightness:</b> {cnnResult.visual_features.mean_brightness}</div>
+                  <div>🌊 <b>Moisture:</b> {cnnResult.visual_features.estimated_visual_moisture}</div>
+                </div>
+              )}
 
-            {/* Dynamic Class Probability Bars */}
-            <div style={{ marginTop: '0.75rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#166534', marginBottom: '0.35rem' }}>
-                Probability Breakdown across 7 Soil Classes:
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                {Object.entries(cnnResult.all_probabilities || {}).slice(0, 4).map(([cls, p]) => (
-                  <div key={cls} style={{ fontSize: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px', color: '#334155' }}>
-                      <span>{cls}</span>
-                      <b>{(p * 100).toFixed(1)}%</b>
+              {/* Dynamic Class Probability Bars */}
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#166534', marginBottom: '0.35rem' }}>
+                  Probability Breakdown across 7 Soil Classes:
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {Object.entries(cnnResult.all_probabilities || {}).slice(0, 4).map(([cls, p]) => (
+                    <div key={cls} style={{ fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1px', color: '#334155' }}>
+                        <span>{cls}</span>
+                        <b>{(p * 100).toFixed(1)}%</b>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${p * 100}%`, height: '100%', background: '#16a34a', borderRadius: '3px' }} />
+                      </div>
                     </div>
-                    <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ width: `${p * 100}%`, height: '100%', background: '#16a34a', borderRadius: '3px' }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )
         )}
       </div>
 

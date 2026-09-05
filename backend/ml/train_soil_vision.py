@@ -1,4 +1,4 @@
-﻿"""
+"""
 Multi-Model Benchmark & Training: Soil Image Classification
 Extracts multi-space visual features (RGB, HSV, LAB, spatial variance) from all 1,189 images.
 Benchmarks XGBoost, LightGBM, MLP Neural Network, ExtraTrees, and Stacking.
@@ -172,12 +172,18 @@ def benchmark_and_train_soil_models(
     print(f"[BEST SOIL MODEL]: {best_name} with {best_acc * 100:.2f}% Test Accuracy!")
     print("=" * 60)
 
+    # Train Out-of-Distribution (OOD) Domain Verifier
+    from sklearn.ensemble import IsolationForest
+    ood_detector = IsolationForest(n_estimators=150, contamination=0.015, random_state=42)
+    ood_detector.fit(X_train_scaled)
+
     # Save Bundle
     os.makedirs(os.path.dirname(model_output_path), exist_ok=True)
     bundle = {
         "model": best_model,
         "scaler": scaler,
         "encoder": encoder,
+        "ood_detector": ood_detector,
         "classes": list(encoder.classes_),
         "best_model_name": best_name,
         "accuracy": best_acc,
