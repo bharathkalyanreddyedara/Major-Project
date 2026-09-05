@@ -10,32 +10,69 @@ class RAGAssistantService:
         self.load_knowledge_base()
 
     def load_knowledge_base(self):
-        knowledge_files = glob.glob(os.path.join(settings.KNOWLEDGE_DIR, "*.txt"))
+        self.documents = []
+        if not os.path.exists(settings.KNOWLEDGE_DIR):
+            os.makedirs(settings.KNOWLEDGE_DIR, exist_ok=True)
+
+        # Recursively search for all .md and .txt files in knowledge directory
+        knowledge_files = []
+        for root, _, files in os.walk(settings.KNOWLEDGE_DIR):
+            for file in files:
+                if file.endswith(".md") or file.endswith(".txt"):
+                    knowledge_files.append(os.path.join(root, file))
+
         for file_path in knowledge_files:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                    filename = os.path.basename(file_path)
-                    # Simple chunking
-                    sections = content.split("## ")
-                    for sec in sections:
-                        if sec.strip():
-                            self.documents.append({
-                                "source": filename,
-                                "text": "## " + sec if not sec.startswith("#") else sec
-                            })
-            except Exception as e:
-                print(f"Error reading knowledge file {file_path}: {e}")
-        
-        print(f"Loaded {len(self.documents)} knowledge chunks into RAG store.")
+                    rel_source = os.path.relpath(file_path, settings.KNOWLEDGE_DIR).replace("\\", "/")
+                    
+                    # Split by markdown headers (# or ##)
+                    chunks = []
+                    lines = content.split("\n")
+                    curr_chunk = []
+                    curr_header = rel_source
 
-    def retrieve_relevant_docs(self, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
-        query_words = set(query.lower().split())
-        scored_docs = []
+                    for line in lines:
+                        if line.startswith("# ") or line.startswith("## ") or line.startswith("### "):
+                            if curr_chunk:
+                                chunk_text = "\n".join(curr_chunk).strip()
+                                if len(chunk_text) > 40:
+                                    chunks.append(f"[{curr_header}]\n{chunk_text}")
+                                curr_chunk = []
+                            curr_header = f"{rel_source} > {line.strip('# ')}"
+                        curr_chunk.append(line)
+
+                    if curr_chunk:
+                        chunk_text = "\n".join(curr_chunk).strip()
+                        if len(chunk_text) > 40:
+                            chunks.append(f"[{curr_header}]\n{chunk_text}")
+
+                    for chunk in chunks:
+                        self.documents.append({
+                            "source": rel_source,
+                            "text": chunk
+                        })
+            except Exception as e:
+                print(f"[RAGAssistantService] Error reading knowledge file {file_path}: {e}")
         
+        print(f"[RAGAssistantService] Indexed {len(self.documents)} dynamic knowledge chunks from {len(knowledge_files)} Markdown/text files.")
+
+    def retrieve_relevant_docs(self, query: str, context_tags: List[str] = None, top_k: int = 4) -> List[Dict[str, Any]]:
+        query_words = [w.lower() for w in query.replace("?", "").replace(",", "").split() if len(w) > 2]
+        if context_tags:
+            for tag in context_tags:
+                if tag:
+                    query_words.extend([w.lower() for w in tag.split() if len(w) > 2])
+
+        scored_docs = []
         for doc in self.documents:
             text_lower = doc["text"].lower()
-            score = sum(1 for word in query_words if word in text_lower and len(word) > 2)
+            # Calculate match score with keyword frequency weighting
+            score = 0
+            for word in query_words:
+                if word in text_lower:
+                    score += text_lower.count(word)
             if score > 0:
                 scored_docs.append((score, doc))
         

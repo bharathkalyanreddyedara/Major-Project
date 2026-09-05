@@ -62,7 +62,35 @@ class SoilService:
                 "rejection_reason": "Uniform solid graphic detected. Please upload a clear photo of your field soil."
             }
 
-        # 3. Isolation Forest OOD Model Check
+        # 3. Human Portrait & Synthetic Clothing Check
+        r = arr[:, :, 0]
+        g = arr[:, :, 1]
+        b = arr[:, :, 2]
+        face_region_r = r[25:120, 30:170]
+        face_region_g = g[25:120, 30:170]
+        face_region_b = b[25:120, 30:170]
+        face_skin = (face_region_r > (face_region_g + 10)) & (face_region_g > (face_region_b + 5)) & (face_region_r > 100) & (face_region_b > 35) & (face_region_b < 175)
+        face_skin_ratio = float(np.mean(face_skin))
+
+        body_r = r[120:200, 20:180]
+        body_g = g[120:200, 20:180]
+        body_b = b[120:200, 20:180]
+        blue_clothing_bottom = (body_b > (body_r + 12)) & (body_b > (body_g + 8)) & (body_b > 45)
+        blue_bottom_ratio = float(np.mean(blue_clothing_bottom))
+
+        top_r = r[0:80, :]
+        top_g = g[0:80, :]
+        top_b = b[0:80, :]
+        blue_top = (top_b > (top_r + 12)) & (top_b > (top_g + 8)) & (top_b > 45)
+        blue_top_ratio = float(np.mean(blue_top))
+
+        if face_skin_ratio > 0.15 and blue_bottom_ratio > 0.08 and (blue_bottom_ratio >= blue_top_ratio):
+            return {
+                "is_valid_soil": False,
+                "rejection_reason": "Human portrait / non-soil object detected. Please upload an authentic photo of agricultural field soil."
+            }
+
+        # 4. Isolation Forest OOD Model Check
         if self.vision_bundle and "ood_detector" in self.vision_bundle:
             ood_detector = self.vision_bundle["ood_detector"]
             ood_score = float(ood_detector.decision_function(scaled_feats)[0])
