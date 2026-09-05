@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENWEATHER_API_KEY: str = os.getenv("OPENWEATHER_API_KEY", "")
     
+    # Supabase Vector Database (pgvector)
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")
+    
     # Paths
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     MODELS_DIR: str = os.path.join(BASE_DIR, "models")

@@ -6,8 +6,18 @@ from backend.app.config import settings
 class RAGAssistantService:
     def __init__(self):
         self.documents = []
-        self.vector_store = None
+        self.supabase_client = None
+        self.init_supabase()
         self.load_knowledge_base()
+
+    def init_supabase(self):
+        if settings.SUPABASE_URL and settings.SUPABASE_KEY:
+            try:
+                from supabase import create_client
+                self.supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+                print("[RAGAssistantService] Connected to Supabase pgvector database!")
+            except Exception as e:
+                print(f"[RAGAssistantService] Supabase connection notice: {e}")
 
     def load_knowledge_base(self):
         self.documents = []
@@ -59,6 +69,32 @@ class RAGAssistantService:
         print(f"[RAGAssistantService] Indexed {len(self.documents)} dynamic knowledge chunks from {len(knowledge_files)} Markdown/text files.")
 
     def retrieve_relevant_docs(self, query: str, context_tags: List[str] = None, top_k: int = 4) -> List[Dict[str, Any]]:
+        # 1. First Attempt: Supabase pgvector Similarity Search (if configured)
+        if self.supabase_client and settings.GEMINI_API_KEY:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=settings.GEMINI_API_KEY)
+                emb_res = genai.embed_content(
+                    model="models/text-embedding-004",
+                    content=query,
+                    task_type="retrieval_query"
+                )
+                query_vec = emb_res["embedding"]
+                rpc_res = self.supabase_client.rpc(
+                    "match_crop_documents",
+                    {
+                        "query_embedding": query_vec,
+                        "match_threshold": 0.25,
+                        "match_count": top_k
+                    }
+                ).execute()
+
+                if rpc_res.data and len(rpc_res.data) > 0:
+                    return [{"source": r["source"], "text": r["content"], "similarity": r.get("similarity")} for r in rpc_res.data]
+            except Exception as e:
+                print(f"[RAGAssistantService] Supabase vector query notice: {e}")
+
+        # 2. In-Memory Grounded Search Fallback
         query_words = [w.lower() for w in query.replace("?", "").replace(",", "").split() if len(w) > 2]
         if context_tags:
             for tag in context_tags:
@@ -68,7 +104,6 @@ class RAGAssistantService:
         scored_docs = []
         for doc in self.documents:
             text_lower = doc["text"].lower()
-            # Calculate match score with keyword frequency weighting
             score = 0
             for word in query_words:
                 if word in text_lower:
