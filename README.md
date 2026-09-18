@@ -1,4 +1,4 @@
-﻿# Multimodal Generative AI System for Adaptive Crop Planning and Proactive Farm Intelligence
+# Multimodal Generative AI System for Adaptive Crop Planning and Proactive Farm Intelligence
 
 A complete, end-to-end intelligent agricultural decision-support system built for Major Project Submission (A. Y. 2026-2027).
 
@@ -75,16 +75,17 @@ python backend/ml/train_soil_vision.py
 
 ## 🚀 How to Run the Application
 
-### 1. Start the FastAPI Backend Server
+### 1. Launch the Streamlit Intelligence Dashboard (Recommended)
+Run the complete multimodal web dashboard with a single command:
+```bash
+streamlit run app.py
+```
+- Web Application UI: `http://localhost:8501`
+
+### 2. (Optional) Run the FastAPI REST API Server
+If integrating with external microservices or mobile clients:
 ```bash
 uvicorn backend.app.main:app --reload --port 8000
 ```
-- Interactive Swagger UI: `http://localhost:8000/docs`
-
-### 2. Start the React Frontend Dashboard
-```bash
-cd frontend
-npm install
-npm start
-```
-- Web Application: `http://localhost:3000`
+- Interactive API Docs (Swagger UI): `http://localhost:8000/docs`
+- ReDoc UI: `http://localhost:8000/redoc`
