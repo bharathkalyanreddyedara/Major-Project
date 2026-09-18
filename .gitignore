@@ -1,4 +1,4 @@
-﻿# Python
+# Python & Environments
 __pycache__/
 *.py[cod]
 *.class
@@ -9,16 +9,17 @@ venv/
 ENV/
 .venv/
 
+# Streamlit Cache
+.streamlit/
+
+# Dataset & Large media
+Orignal-Dataset/
+*.tmp
+*.log
+
 # Environment Variables
 .env
 .env.local
-
-# Node / Frontend
-node_modules/
-frontend/build/
-frontend/dist/
-.npm
-*.log
 
 # IDE & OS
 .vscode/
