@@ -1,4 +1,4 @@
-﻿fastapi>=0.110.0
+fastapi>=0.110.0
 uvicorn[standard]>=0.28.0
 python-multipart>=0.0.9
 pydantic>=2.6.0
@@ -19,3 +19,4 @@ langchain>=0.1.10
 langchain-community>=0.0.25
 langchain-google-genai>=0.0.9
 faiss-cpu>=1.8.0
+streamlit>=1.30.0
