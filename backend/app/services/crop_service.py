@@ -41,9 +41,14 @@ class CropService:
             "Papaya": {"season": "All Seasons", "water": "Medium (1000-1200 mm)", "duration": 270, "opt_ph": (6.0, 7.0), "opt_temp": (22, 35), "opt_soil": ["Alluvial", "Loamy", "Red"]},
             "Banana": {"season": "Perennial / Tropical", "water": "Very High (1500-2200 mm)", "duration": 330, "opt_ph": (6.0, 7.5), "opt_temp": (20, 35), "opt_soil": ["Alluvial", "Clayey", "Loamy", "Black"]},
             "Mango": {"season": "Summer / Tropical", "water": "Medium (750-1200 mm)", "duration": 150, "opt_ph": (5.5, 7.5), "opt_temp": (24, 38), "opt_soil": ["Alluvial", "Red", "Loamy"]},
-            "Grapes": {"season": "Summer / Rabi", "water": "Medium (Drip)", "duration": 140, "opt_ph": (6.5, 7.8), "opt_temp": (15, 35), "opt_soil": ["Sandy", "Loamy", "Red", "Black"]},
             "Watermelon": {"season": "Zaid (Summer)", "water": "Low-Medium (400-600 mm)", "duration": 85, "opt_ph": (6.0, 7.0), "opt_temp": (24, 35), "opt_soil": ["Sandy", "Alluvial", "Loamy"]},
-            "Muskmelon": {"season": "Zaid (Summer)", "water": "Low (350-500 mm)", "duration": 80, "opt_ph": (6.0, 7.0), "opt_temp": (24, 35), "opt_soil": ["Sandy", "Alluvial", "Loamy"]}
+            "Muskmelon": {"season": "Zaid (Summer)", "water": "Low (350-500 mm)", "duration": 80, "opt_ph": (6.0, 7.0), "opt_temp": (24, 35), "opt_soil": ["Sandy", "Alluvial", "Loamy"]},
+            "Groundnut": {"season": "Kharif / Zaid", "water": "Low-Medium (400-600 mm)", "duration": 110, "opt_ph": (5.5, 7.0), "opt_temp": (22, 30), "opt_soil": ["Sandy", "Red", "Loamy"]},
+            "Tomato": {"season": "Rabi / Kharif / Summer", "water": "Medium (500-700 mm)", "duration": 115, "opt_ph": (6.0, 7.0), "opt_temp": (20, 28), "opt_soil": ["Loamy", "Alluvial", "Red", "Black"]},
+            "Potato": {"season": "Rabi (Winter)", "water": "Medium (450-600 mm)", "duration": 100, "opt_ph": (5.2, 6.5), "opt_temp": (16, 22), "opt_soil": ["Sandy", "Loamy", "Alluvial"]},
+            "Mustard": {"season": "Rabi (Winter)", "water": "Low (250-400 mm)", "duration": 110, "opt_ph": (6.0, 7.5), "opt_temp": (15, 25), "opt_soil": ["Alluvial", "Loamy", "Sandy", "Clayey"]},
+            "Soybean": {"season": "Kharif (Monsoon)", "water": "Medium (500-750 mm)", "duration": 105, "opt_ph": (6.0, 7.5), "opt_temp": (20, 32), "opt_soil": ["Black", "Alluvial", "Loamy"]},
+            "Sorghum": {"season": "Kharif / Rabi", "water": "Low (400-600 mm)", "duration": 110, "opt_ph": (6.0, 8.5), "opt_temp": (26, 34), "opt_soil": ["Black", "Alluvial", "Loamy"]}
         }
 
     def load_model(self):
