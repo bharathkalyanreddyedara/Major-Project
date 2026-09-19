@@ -416,25 +416,33 @@ class CropService:
                         soil_enc_val = idx
                         break
 
-                n_to_p = soil.nitrogen / (soil.phosphorus + 1e-4)
-                n_to_k = soil.nitrogen / (soil.potassium + 1e-4)
-                p_to_k = soil.phosphorus / (soil.potassium + 1e-4)
-                npk_sum = soil.nitrogen + soil.phosphorus + soil.potassium
+                feature_dict = {
+                    "N": soil.nitrogen,
+                    "P": soil.phosphorus,
+                    "K": soil.potassium,
+                    "pH": soil.ph,
+                    "Temperature": temperature,
+                    "Humidity": humidity,
+                    "Rainfall": seasonal_rain_feature,
+                    "SoilType_Encoded": soil_enc_val,
+                    "Soil_Type_Enc": soil_enc_val,
+                    "N_to_P": soil.nitrogen / (soil.phosphorus + 1e-4),
+                    "N_to_K": soil.nitrogen / (soil.potassium + 1e-4),
+                    "P_to_K": soil.phosphorus / (soil.potassium + 1e-4),
+                    "NPK_Sum": soil.nitrogen + soil.phosphorus + soil.potassium,
+                    "Aridity_Index": temperature / (seasonal_rain_feature + 10.0),
+                    "THI": (1.8 * temperature + 32) - (0.55 - 0.0055 * humidity) * (1.8 * temperature - 26),
+                    "pH_Deviation": abs(soil.ph - 6.5),
+                    "Soil_Reaction_Class": 0 if soil.ph < 6.0 else (2 if soil.ph > 7.5 else 1)
+                }
                 
                 feature_cols = self.bundle.get("feature_cols", [])
-                if len(feature_cols) == 12:
-                    features = [
-                        soil.nitrogen, soil.phosphorus, soil.potassium, soil.ph,
-                        temperature, humidity, seasonal_rain_feature, soil_enc_val,
-                        n_to_p, n_to_k, p_to_k, npk_sum
-                    ]
+                if feature_cols:
+                    feature_row = [feature_dict.get(c, 0.0) for c in feature_cols]
+                    df_feat = pd.DataFrame([feature_row], columns=feature_cols)
                 else:
-                    features = [
-                        soil.nitrogen, soil.phosphorus, soil.potassium, soil.ph,
-                        temperature, humidity, seasonal_rain_feature, soil_enc_val
-                    ]
-                
-                df_feat = pd.DataFrame([features], columns=feature_cols if feature_cols else None)
+                    df_feat = pd.DataFrame([[soil.nitrogen, soil.phosphorus, soil.potassium, soil.ph, temperature, humidity, seasonal_rain_feature, soil_enc_val]])
+
                 features_scaled = self.bundle["scaler"].transform(df_feat)
                 probs = self.bundle["model"].predict_proba(features_scaled)[0]
                 crop_classes = self.bundle["crop_classes"]
