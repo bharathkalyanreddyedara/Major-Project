@@ -229,6 +229,20 @@ with tab1:
                     if result["is_valid_soil"] and result["detected_soil_type"]:
                         clean_type = result["detected_soil_type"].replace(" Soil", "").strip()
                         st.session_state.soil_data["soil_type"] = clean_type
+                        
+                        # Real agronomic chemical baselines by soil classification
+                        soil_baselines = {
+                            "Black": {"ph": 7.8, "nitrogen": 90.0, "phosphorus": 42.0, "potassium": 48.0, "moisture": 45.0, "zinc": 1.2, "sulphur": 15.0, "electrical_conductivity": 0.8},
+                            "Alluvial": {"ph": 7.2, "nitrogen": 110.0, "phosphorus": 52.0, "potassium": 55.0, "moisture": 40.0, "zinc": 1.5, "sulphur": 18.0, "electrical_conductivity": 0.6},
+                            "Red": {"ph": 6.2, "nitrogen": 75.0, "phosphorus": 35.0, "potassium": 50.0, "moisture": 30.0, "zinc": 0.9, "sulphur": 12.0, "electrical_conductivity": 0.4},
+                            "Laterite": {"ph": 5.2, "nitrogen": 55.0, "phosphorus": 22.0, "potassium": 35.0, "moisture": 28.0, "zinc": 0.6, "sulphur": 8.0, "electrical_conductivity": 0.3},
+                            "Arid": {"ph": 8.4, "nitrogen": 40.0, "phosphorus": 18.0, "potassium": 65.0, "moisture": 15.0, "zinc": 0.5, "sulphur": 25.0, "electrical_conductivity": 1.8},
+                            "Mountain": {"ph": 5.6, "nitrogen": 85.0, "phosphorus": 30.0, "potassium": 45.0, "moisture": 50.0, "zinc": 1.1, "sulphur": 14.0, "electrical_conductivity": 0.4},
+                            "Yellow": {"ph": 6.0, "nitrogen": 65.0, "phosphorus": 28.0, "potassium": 40.0, "moisture": 35.0, "zinc": 0.8, "sulphur": 10.0, "electrical_conductivity": 0.5}
+                        }
+                        if clean_type in soil_baselines:
+                            st.session_state.soil_data.update(soil_baselines[clean_type])
+                        st.rerun()
 
         # Render Soil Vision Output
         if st.session_state.cnn_result:
@@ -250,10 +264,10 @@ with tab1:
                 <div class="agri-card-green">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div>
-                            <span style="font-size: 1.15rem; font-weight: 800; color: #14532d;">Detected: {res.get('detected_soil_type')}</span>
-                            <div style="font-size: 0.75rem; color: #166534;">Verified against 7 Agro-Soil Classes</div>
+                            <span style="font-size: 1.2rem; font-weight: 800; color: #14532d;">🎯 Predicted Soil: {res.get('detected_soil_type')}</span>
+                            <div style="font-size: 0.78rem; color: #166534;">Verified against 7 Agro-Soil Taxonomy Classes</div>
                         </div>
-                        <span class="badge-pill badge-green" style="font-size: 0.9rem;">{res.get('confidence', 0.0)*100:.1f}% Match</span>
+                        <span class="badge-pill badge-green" style="font-size: 0.95rem;">{res.get('confidence', 0.0)*100:.1f}% Confidence</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -278,13 +292,40 @@ with tab1:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # Probability breakdown
-                st.markdown("<div style='margin-top: 12px; font-weight: 700; font-size: 0.85rem; color: #166534;'>Probability Breakdown across 7 Soil Classes:</div>", unsafe_allow_html=True)
-                for cls_name, prob in list(res.get("all_probabilities", {}).items())[:4]:
+                # Probability breakdown across all 7 classes
+                st.markdown("<div style='margin-top: 14px; font-weight: 700; font-size: 0.88rem; color: #166534;'>📊 Probability Distribution Across All 7 Soil Classes:</div>", unsafe_allow_html=True)
+                for cls_name, prob in list(res.get("all_probabilities", {}).items()):
                     col_p1, col_p2 = st.columns([3, 1])
                     col_p1.write(f"**{cls_name}**")
                     col_p2.write(f"{prob*100:.1f}%")
                     st.progress(float(prob))
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🚀 Auto-Recommend Crops for this Soil", key="auto_rec_btn", type="primary", use_container_width=True):
+                    with st.spinner("Computing precision crop suitability for predicted soil..."):
+                        manual_props = ManualSoilProperties(
+                            nitrogen=st.session_state.soil_data["nitrogen"],
+                            phosphorus=st.session_state.soil_data["phosphorus"],
+                            potassium=st.session_state.soil_data["potassium"],
+                            ph=st.session_state.soil_data["ph"],
+                            soil_type=st.session_state.soil_data["soil_type"],
+                            moisture=st.session_state.soil_data["moisture"],
+                            zinc=st.session_state.soil_data["zinc"],
+                            sulphur=st.session_state.soil_data["sulphur"],
+                            electrical_conductivity=st.session_state.soil_data["electrical_conductivity"]
+                        )
+                        req = CropRecommendationRequest(
+                            soil_properties=manual_props,
+                            city=st.session_state.city,
+                            temperature=weather.get("temperature"),
+                            humidity=weather.get("humidity"),
+                            rainfall=weather.get("rainfall")
+                        )
+                        recs_resp = crop_service.recommend_crops(req)
+                        st.session_state.recommendations = recs_resp.get("recommendations", [])
+                        if st.session_state.recommendations:
+                            st.session_state.selected_crop = st.session_state.recommendations[0]["crop_name"]
+                        st.success(f"✅ Crops recommended for {res.get('detected_soil_type')}! Navigate to Tab 2 to view details.")
 
     with col_v2:
         st.subheader("🧪 Manual Soil Chemistry Report")
