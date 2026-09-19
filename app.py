@@ -497,10 +497,11 @@ with tab5:
     st.subheader(f"🔔 Proactive Weather & Hazard Intelligence ({st.session_state.city})")
     st.write("Streams real-time meteorological danger thresholds and provides preventative agronomic checklists.")
     
-    with st.spinner("Evaluating weather risks..."):
+    with st.spinner("Evaluating weather risks & stage-specific agronomic advisories..."):
+        sowing_str = st.session_state.sowing_date.strftime("%Y-%m-%d") if hasattr(st.session_state.sowing_date, "strftime") else str(st.session_state.sowing_date)
         notifs = notification_service.get_notifications(
             crop_name=st.session_state.selected_crop,
-            growth_stage="Vegetative / Tillering",
+            sowing_date=sowing_str,
             city=st.session_state.city
         )
         
