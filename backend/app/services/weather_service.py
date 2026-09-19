@@ -63,7 +63,7 @@ class WeatherService:
                 return {
                     "temperature": round(float(curr.get("temperature_2m", 28.0)), 1),
                     "humidity": round(float(curr.get("relative_humidity_2m", 65.0)), 1),
-                    "rainfall": round(float(daily_rain * 10), 1), # scaled mm estimation
+                    "rainfall": round(float(daily_rain), 1), # True mm precipitation from Open-Meteo satellite
                     "pressure": round(float(curr.get("surface_pressure", 1012.0)), 1),
                     "weather_condition": condition,
                     "wind_speed": round(float(curr.get("wind_speed_10m", 5.0)), 1),
