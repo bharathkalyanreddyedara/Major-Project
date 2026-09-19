@@ -170,18 +170,19 @@ class TimelineService:
             "Mango": 150, "Grapes": 140, "Watermelon": 85, "Muskmelon": 80
         }
 
-    def generate_timeline(self, crop_name: str, sowing_date_str: str, soil_type: str = "Alluvial", location: str = "Farm") -> CropTimelineResponse:
+    def generate_timeline(self, crop_name: str, sowing_date: str = None, sowing_date_str: str = None, soil_type: str = "Alluvial", location: str = "Farm", **kwargs) -> Dict[str, Any]:
         crop_clean = crop_name.strip().title()
+        date_input = sowing_date or sowing_date_str or datetime.now().strftime("%Y-%m-%d")
         
         try:
-            sowing_date = datetime.strptime(sowing_date_str, "%Y-%m-%d")
+            sowing_date_dt = datetime.strptime(str(date_input), "%Y-%m-%d")
         except Exception:
-            sowing_date = datetime.now()
+            sowing_date_dt = datetime.now()
 
         total_days = self.crop_durations.get(crop_clean, 120)
-        harvest_date = sowing_date + timedelta(days=total_days)
+        harvest_date = sowing_date_dt + timedelta(days=total_days)
 
-        current_day = max(0, (datetime.now() - sowing_date).days)
+        current_day = max(0, (datetime.now() - sowing_date_dt).days)
         
         # Select appropriate stage template or adapt
         template = self.stage_templates.get(crop_clean, self.stage_templates.get("Rice"))
@@ -195,8 +196,8 @@ class TimelineService:
             end_d = int((t["pct_end"] / 100.0) * total_days)
 
             # Calculate real calendar dates for every stage
-            stage_start_date = (sowing_date + timedelta(days=start_d)).strftime("%Y-%m-%d")
-            stage_end_date = (sowing_date + timedelta(days=end_d)).strftime("%Y-%m-%d")
+            stage_start_date = (sowing_date_dt + timedelta(days=start_d)).strftime("%Y-%m-%d")
+            stage_end_date = (sowing_date_dt + timedelta(days=end_d)).strftime("%Y-%m-%d")
 
             status = "upcoming"
             if current_day > end_d:
@@ -221,28 +222,31 @@ class TimelineService:
                     "date": stage_start_date
                 })
 
-            stages.append(TimelineStage(
-                stage_id=idx,
-                stage_name=t["name"],
-                start_day=start_d,
-                end_day=end_d,
-                status=status,
-                activities=t["activities"],
-                irrigation_schedule=t["irrigation"],
-                fertilizer_advice=t["fertilizer"],
-                pest_disease_watch=t["pest_watch"],
-                critical_notes=f"Scheduled: {stage_start_date} to {stage_end_date}. {t['notes']}"
-            ))
+            stages.append({
+                "stage_id": idx,
+                "stage_name": t["name"],
+                "start_day": start_d,
+                "end_day": end_d,
+                "start_date": stage_start_date,
+                "end_date": stage_end_date,
+                "status": status,
+                "activities": t["activities"],
+                "irrigation_schedule": t["irrigation"],
+                "fertilizer_advice": t["fertilizer"],
+                "pest_disease_watch": t["pest_watch"],
+                "critical_notes": f"Scheduled: {stage_start_date} to {stage_end_date}. {t['notes']}"
+            })
 
-        return CropTimelineResponse(
-            crop_name=crop_clean,
-            sowing_date=sowing_date.strftime("%Y-%m-%d"),
-            expected_harvest_date=harvest_date.strftime("%Y-%m-%d"),
-            total_duration_days=total_days,
-            current_day=min(total_days, current_day),
-            current_stage=current_stage_name,
-            stages=stages,
-            active_notifications=notifications
-        )
+        return {
+            "crop_name": crop_clean,
+            "sowing_date": sowing_date_dt.strftime("%Y-%m-%d"),
+            "expected_harvest_date": harvest_date.strftime("%Y-%m-%d"),
+            "estimated_harvest_date": harvest_date.strftime("%Y-%m-%d"),
+            "total_duration_days": total_days,
+            "current_day": min(total_days, current_day),
+            "current_stage": current_stage_name,
+            "stages": stages,
+            "active_notifications": notifications
+        }
 
 timeline_service = TimelineService()

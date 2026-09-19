@@ -47,10 +47,11 @@ class CropRecommendationResponse(BaseModel):
 # Fertilizer Recommendation
 class FertilizerRecommendationRequest(BaseModel):
     crop_name: str
-    soil_type: str
-    nitrogen: float
-    phosphorus: float
-    potassium: float
+    soil_properties: Optional[ManualSoilProperties] = None
+    soil_type: Optional[str] = None
+    nitrogen: Optional[float] = None
+    phosphorus: Optional[float] = None
+    potassium: Optional[float] = None
     temperature: Optional[float] = 26.0
     humidity: Optional[float] = 60.0
     moisture: Optional[float] = 40.0

@@ -133,4 +133,97 @@ class FertilizerService:
             "application_tips": "Apply 50% Nitrogen and 100% Phosphorus & Potassium as basal dose before sowing. Apply remaining Nitrogen in split doses at tillering and panicle/flowering stages."
         }
 
+    def recommend_fertilizers(self, req: Any) -> Dict[str, Any]:
+        # Handle FertilizerRecommendationRequest or dict
+        if hasattr(req, "soil_properties"):
+            props = req.soil_properties
+            crop = getattr(req, "crop_name", "Rice")
+            n = getattr(props, "nitrogen", 90.0)
+            p = getattr(props, "phosphorus", 42.0)
+            k = getattr(props, "potassium", 43.0)
+            ph = getattr(props, "ph", 6.5)
+            soil_type = getattr(props, "soil_type", "Black")
+            zinc = getattr(props, "zinc", 1.2)
+            sulphur = getattr(props, "sulphur", 15.0)
+            moist = getattr(props, "moisture", 40.0)
+            temp = 26.0
+            humid = 60.0
+        elif isinstance(req, dict):
+            crop = req.get("crop_name", "Rice")
+            n = float(req.get("nitrogen", 90.0))
+            p = float(req.get("phosphorus", 42.0))
+            k = float(req.get("potassium", 43.0))
+            ph = float(req.get("ph", 6.5))
+            soil_type = req.get("soil_type", "Black")
+            zinc = float(req.get("zinc", 1.2) or 1.2)
+            sulphur = float(req.get("sulphur", 15.0) or 15.0)
+            moist = float(req.get("moisture", 40.0) or 40.0)
+            temp = float(req.get("temperature", 26.0) or 26.0)
+            humid = float(req.get("humidity", 60.0) or 60.0)
+        else:
+            crop = getattr(req, "crop_name", "Rice")
+            n = getattr(req, "nitrogen", 90.0)
+            p = getattr(req, "phosphorus", 42.0)
+            k = getattr(req, "potassium", 43.0)
+            ph = getattr(req, "ph", 6.5)
+            soil_type = getattr(req, "soil_type", "Black")
+            zinc = getattr(req, "zinc", 1.2)
+            sulphur = getattr(req, "sulphur", 15.0)
+            moist = getattr(req, "moisture", 40.0)
+            temp = getattr(req, "temperature", 26.0)
+            humid = getattr(req, "humidity", 60.0)
+
+        # Baseline recommendation
+        base = self.recommend(
+            crop=crop,
+            soil_type=soil_type,
+            n=n,
+            p=p,
+            k=k,
+            temp=temp,
+            humidity=humid,
+            moisture=moist
+        )
+
+        target = self.crop_npk_targets.get(crop.strip().title(), {"N": 100, "P": 50, "K": 50})
+        n_def = max(0.0, target["N"] - n)
+        p_def = max(0.0, target["P"] - p)
+        k_def = max(0.0, target["K"] - k)
+
+        # 50kg bag calculations
+        urea_bags = round((n_def / 0.46) / 50.0, 1) if n_def > 0 else 0.0
+        dap_bags = round((p_def / 0.46) / 50.0, 1) if p_def > 0 else 0.0
+        mop_bags = round((k_def / 0.60) / 50.0, 1) if k_def > 0 else 0.0
+        ssp_bags = round((p_def / 0.16) / 50.0, 1) if p_def > 0 else 0.0
+
+        micro_advice = {}
+        if zinc is not None and zinc < 0.6:
+            micro_advice["Zinc"] = f"Soil zinc ({zinc} ppm) is below critical threshold (0.6 ppm). Broadcast Zinc Sulphate (21% Zn) @ 25 kg/ha."
+        if sulphur is not None and sulphur < 10.0:
+            micro_advice["Sulphur"] = f"Soil sulphur ({sulphur} ppm) is deficient (<10 ppm). Apply Single Super Phosphate (SSP) or Gypsum @ 20 kg/ha."
+        if ph < 5.5:
+            micro_advice["Acidity (Lime)"] = f"Soil pH ({ph}) is acidic. Incorporate Agricultural Lime (CaCO3) @ 500-1000 kg/ha before sowing."
+        elif ph > 8.5:
+            micro_advice["Alkalinity (Gypsum)"] = f"Soil pH ({ph}) is alkaline. Apply agricultural Gypsum @ 1000 kg/ha with deep summer ploughing."
+
+        return {
+            "primary_fertilizer": base.get("primary_fertilizer", "Urea"),
+            "recommended_fertilizers": base.get("recommended_fertilizers", []),
+            "application_guidelines": base.get("application_tips", "Apply 50% N and full P & K as basal dose before sowing."),
+            "dosage_kg_per_ha": {
+                "nitrogen_deficit_kg_ha": int(n_def),
+                "phosphorus_deficit_kg_ha": int(p_def),
+                "potassium_deficit_kg_ha": int(k_def)
+            },
+            "commercial_bags_recommended": {
+                "urea_50kg_bags": urea_bags,
+                "dap_50kg_bags": dap_bags,
+                "mop_50kg_bags": mop_bags,
+                "ssp_50kg_bags": ssp_bags
+            },
+            "organic_alternatives": "Incorporate well-decomposed Farm Yard Manure (FYM) @ 10 tonnes/ha or Vermicompost @ 2.5 tonnes/ha with biofertilizers (Azospirillum & PSB).",
+            "micronutrient_advice": micro_advice,
+            "target_npk_ratio": base.get("target_npk_ratio", "120:60:60")
+        }
+
 fertilizer_service = FertilizerService()

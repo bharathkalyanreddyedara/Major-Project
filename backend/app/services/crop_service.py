@@ -56,22 +56,33 @@ class CropService:
 
     def recommend_crops(
         self,
-        soil: ManualSoilProperties,
+        soil: Any,
         city: str = "Hyderabad",
         lat: float = None,
         lon: float = None,
         custom_temp: float = None,
         custom_humidity: float = None,
         custom_rainfall: float = None
-    ) -> CropRecommendationResponse:
+    ) -> Dict[str, Any]:
         
+        # Handle CropRecommendationRequest
+        if hasattr(soil, "soil_properties"):
+            req_obj = soil
+            soil = req_obj.soil_properties
+            city = getattr(req_obj, "city", city) or city
+            lat = getattr(req_obj, "latitude", lat)
+            lon = getattr(req_obj, "longitude", lon)
+            custom_temp = getattr(req_obj, "temperature", custom_temp)
+            custom_humidity = getattr(req_obj, "humidity", custom_humidity)
+            custom_rainfall = getattr(req_obj, "rainfall", custom_rainfall)
+
         # 1. Fetch live or customized weather dynamically
         weather = weather_service.get_weather(city=city, lat=lat, lon=lon)
         temperature = custom_temp if custom_temp is not None else weather["temperature"]
         humidity = custom_humidity if custom_humidity is not None else weather["humidity"]
         rainfall = custom_rainfall if custom_rainfall is not None else weather["rainfall"]
 
-        soil_type = (soil.soil_type or "Alluvial").strip().title()
+        soil_type = (getattr(soil, "soil_type", None) or "Alluvial").strip().title()
 
         crop_scores = {}
 
@@ -176,11 +187,23 @@ class CropService:
 
         # Rank by combined confidence and suitability
         recommendations.sort(key=lambda x: (x.confidence, x.suitability_score), reverse=True)
-        top_recommendations = recommendations[:6]
+        top_recommendations = [
+            {
+                "crop_name": r.crop_name,
+                "confidence": r.confidence,
+                "suitability_score": r.suitability_score,
+                "recommended_season": r.recommended_season,
+                "soil_compatibility": r.soil_compatibility,
+                "water_requirement": r.water_requirement,
+                "growth_duration_days": r.growth_duration_days,
+                "optimal_fertilizers": r.optimal_fertilizers
+            }
+            for r in recommendations[:6]
+        ]
 
-        return CropRecommendationResponse(
-            recommendations=top_recommendations,
-            environmental_context={
+        return {
+            "recommendations": top_recommendations,
+            "environmental_context": {
                 "location": weather["city"],
                 "temperature": temperature,
                 "humidity": humidity,
@@ -188,13 +211,13 @@ class CropService:
                 "weather_condition": weather["weather_condition"],
                 "is_live_weather": weather.get("is_live", False),
                 "provided_soil": {
-                    "nitrogen": soil.nitrogen,
-                    "phosphorus": soil.phosphorus,
-                    "potassium": soil.potassium,
-                    "ph": soil.ph,
+                    "nitrogen": getattr(soil, "nitrogen", 0),
+                    "phosphorus": getattr(soil, "phosphorus", 0),
+                    "potassium": getattr(soil, "potassium", 0),
+                    "ph": getattr(soil, "ph", 7.0),
                     "soil_type": soil_type
                 }
             }
-        )
+        }
 
 crop_service = CropService()
