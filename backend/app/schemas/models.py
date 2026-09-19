@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 # Soil & Manual Properties
@@ -43,6 +43,24 @@ class RecommendedCrop(BaseModel):
 class CropRecommendationResponse(BaseModel):
     recommendations: List[RecommendedCrop]
     environmental_context: Dict[str, Any]
+
+# Fertilizer Recommendation
+class FertilizerRecommendationRequest(BaseModel):
+    crop_name: str
+    soil_type: str
+    nitrogen: float
+    phosphorus: float
+    potassium: float
+    temperature: Optional[float] = 26.0
+    humidity: Optional[float] = 60.0
+    moisture: Optional[float] = 40.0
+
+class FertilizerRecommendationResponse(BaseModel):
+    predicted_fertilizer: str
+    confidence: float
+    all_probabilities: Dict[str, float] = {}
+    deficit_analysis: Dict[str, Any] = {}
+    actionable_advice: Optional[str] = None
 
 # Lifecycle Timeline
 class TimelineStage(BaseModel):
