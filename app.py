@@ -710,7 +710,7 @@ with tab5:
 # =============================================================
 with tab6:
     st.subheader("🤖 Agricultural AI Knowledge Assistant (RAG Grounded)")
-    st.write("Ask any farming question. The assistant retrieves citations from the 49 authoritative Markdown documents and Supabase vector database.")
+    st.write("Ask any farming question. The conversational AI assistant answers naturally and retrieves scientific citations from 67+ authoritative ICAR & AgricultureGuruji Markdown guides and vector databases.")
     
     # Display Chat History
     for msg in st.session_state.chat_messages:
