@@ -48,8 +48,8 @@ class WeatherService:
             weather_url = (
                 f"https://api.open-meteo.com/v1/forecast?"
                 f"latitude={target_lat}&longitude={target_lon}"
-                f"&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,surface_pressure,weather_code"
-                f"&daily=precipitation_sum,temperature_2m_max,temperature_2m_min"
+                f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,pressure_msl,weather_code"
+                f"&daily=precipitation_sum,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                 f"&timezone=auto"
             )
             w_resp = requests.get(weather_url, timeout=5).json()
@@ -59,12 +59,15 @@ class WeatherService:
                 wmo_code = curr.get("weather_code", 0)
                 condition = cls.WMO_CODES.get(wmo_code, "Partly Cloudy")
                 daily_rain = daily.get("precipitation_sum", [0.0])[0] if daily.get("precipitation_sum") else curr.get("precipitation", 0.0)
+                rain_prob = daily.get("precipitation_probability_max", [0])[0] if daily.get("precipitation_probability_max") else 0
 
                 return {
                     "temperature": round(float(curr.get("temperature_2m", 28.0)), 1),
+                    "feels_like": round(float(curr.get("apparent_temperature", curr.get("temperature_2m", 28.0))), 1),
                     "humidity": round(float(curr.get("relative_humidity_2m", 65.0)), 1),
-                    "rainfall": round(float(daily_rain), 1), # True mm precipitation from Open-Meteo satellite
-                    "pressure": round(float(curr.get("surface_pressure", 1012.0)), 1),
+                    "rainfall": round(float(daily_rain), 1),
+                    "rain_probability": int(rain_prob),
+                    "pressure": round(float(curr.get("pressure_msl", 1012.0)), 1),
                     "weather_condition": condition,
                     "wind_speed": round(float(curr.get("wind_speed_10m", 5.0)), 1),
                     "city": city_name,

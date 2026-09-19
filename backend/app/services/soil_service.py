@@ -42,62 +42,70 @@ class SoilService:
     def validate_is_soil(self, scaled_feats: np.ndarray, arr: np.ndarray, hsv_arr: np.ndarray) -> Dict[str, Any]:
         """
         Out-of-Distribution (OOD) Soil Domain Detector.
-        Uses trained IsolationForest ensemble on empirical soil distributions,
-        complemented by domain heuristics (blank UI screenshot, extreme artificial colors).
+        Rejects portraits, cartoons, studio dark backgrounds (e.g. Joker/movie posters),
+        artificial colors, documents, and non-agricultural objects.
         """
-        # 1. Blank image, UI screenshot, or pure document detection
-        mean_rgb = float(np.mean(arr))
-        rgb_std = float(np.std(arr))
-        white_pixel_ratio = float(np.mean(arr > 240))
-        if (mean_rgb > 225 and rgb_std < 40) or white_pixel_ratio > 0.65:
+        r = arr[:, :, 0].astype(float)
+        g = arr[:, :, 1].astype(float)
+        b = arr[:, :, 2].astype(float)
+        lum = (r + g + b) / 3.0
+
+        # 1. Blank Document / White Screen / UI Screenshot
+        if (np.mean(lum) > 225 and np.std(lum) < 35) or np.mean(lum > 245) > 0.60:
             return {
                 "is_valid_soil": False,
-                "rejection_reason": "Document, UI screenshot, or blank background detected. Please upload an authentic photo of field soil."
+                "rejection_reason": "Document, UI screenshot, or blank white background detected. Please upload a real photo of agricultural soil."
             }
 
-        # 2. Solid color or non-texture graphic
-        if float(np.var(arr)) < 45:
+        # 2. Solid Color / Flat Graphic
+        if float(np.var(lum)) < 30.0:
             return {
                 "is_valid_soil": False,
                 "rejection_reason": "Uniform solid graphic detected. Please upload a clear photo of your field soil."
             }
 
-        # 3. Human Portrait & Synthetic Clothing Check
-        r = arr[:, :, 0]
-        g = arr[:, :, 1]
-        b = arr[:, :, 2]
-        face_region_r = r[25:120, 30:170]
-        face_region_g = g[25:120, 30:170]
-        face_region_b = b[25:120, 30:170]
-        face_skin = (face_region_r > (face_region_g + 10)) & (face_region_g > (face_region_b + 5)) & (face_region_r > 100) & (face_region_b > 35) & (face_region_b < 175)
-        face_skin_ratio = float(np.mean(face_skin))
-
-        body_r = r[120:200, 20:180]
-        body_g = g[120:200, 20:180]
-        body_b = b[120:200, 20:180]
-        blue_clothing_bottom = (body_b > (body_r + 12)) & (body_b > (body_g + 8)) & (body_b > 45)
-        blue_bottom_ratio = float(np.mean(blue_clothing_bottom))
-
-        top_r = r[0:80, :]
-        top_g = g[0:80, :]
-        top_b = b[0:80, :]
-        blue_top = (top_b > (top_r + 12)) & (top_b > (top_g + 8)) & (top_b > 45)
-        blue_top_ratio = float(np.mean(blue_top))
-
-        if face_skin_ratio > 0.15 and blue_bottom_ratio > 0.08 and (blue_bottom_ratio >= blue_top_ratio):
+        # 3. Studio Black Backdrop / Dark Poster / Dark Wallpaper (e.g., Joker / Portrait on Black Background)
+        # Real soil (even black vertisol) has ambient illumination and granular texture.
+        # Studio black backgrounds have pure near-zero black pixels (RGB < 18) with flat zero variance.
+        pitch_black_mask = (r < 18) & (g < 18) & (b < 18)
+        pitch_black_ratio = float(np.mean(pitch_black_mask))
+        
+        # If > 30% of image is pure studio black void, reject immediately
+        if pitch_black_ratio > 0.30:
             return {
                 "is_valid_soil": False,
-                "rejection_reason": "Human portrait / non-soil object detected. Please upload an authentic photo of agricultural field soil."
+                "rejection_reason": "Dark studio backdrop / black wallpaper detected. Agricultural soil photos should show field ground rather than an object against a dark backdrop."
             }
 
-        # 4. Isolation Forest OOD Model Check
+        # If > 15% is pitch black AND there is a high-contrast subject (like Joker face paint or clothing)
+        high_contrast_bright = float(np.mean(lum > 185))
+        if pitch_black_ratio > 0.15 and high_contrast_bright > 0.08:
+            return {
+                "is_valid_soil": False,
+                "rejection_reason": "Character portrait / object on dark background detected. Please upload a direct photo of the soil surface."
+            }
+
+        # 4. Out-of-Gamut Synthetic Colors (Electric Blue, Vibrant Violet/Purple, Pure Neon Pink/Magenta)
+        electric_purple = (r > 100) & (b > 100) & (g < (r - 40)) & (g < (b - 40))
+        pure_magenta = (r > 160) & (b > 140) & (g < 70)
+        intense_cyan = (b > 180) & (g > 160) & (r < 60)
+        pure_lipstick_red = (r > 190) & (g < 40) & (b < 40)
+        
+        synthetic_ratio = float(np.mean(electric_purple | pure_magenta | intense_cyan | pure_lipstick_red))
+        if synthetic_ratio > 0.035:
+            return {
+                "is_valid_soil": False,
+                "rejection_reason": "Artificial / synthetic colors detected (cosplay, neon makeup, vibrant clothing, or digital graphics). Natural soil does not exhibit these pigments."
+            }
+
+        # 5. Isolation Forest Statistical OOD Check
         if self.vision_bundle and "ood_detector" in self.vision_bundle:
             ood_detector = self.vision_bundle["ood_detector"]
             ood_score = float(ood_detector.decision_function(scaled_feats)[0])
-            if ood_score < -0.005:
+            if ood_score < -0.06:
                 return {
                     "is_valid_soil": False,
-                    "rejection_reason": "The uploaded photo does not exhibit natural soil or agricultural land characteristics. Please upload a photo of field soil."
+                    "rejection_reason": "The uploaded photo does not exhibit natural soil or agricultural land characteristics. Please upload a clear photo of field soil."
                 }
 
         return {

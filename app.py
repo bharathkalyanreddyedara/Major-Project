@@ -160,7 +160,7 @@ with st.sidebar:
             <span class="badge-pill badge-green">● Live Satellite</span>
         </div>
         <div style="font-size: 0.85rem; color: #15803d; font-weight: 600; margin-bottom: 8px;">
-            🌤️ {weather.get('weather_condition', 'Clear Sky')}
+            🌤️ {weather.get('weather_condition', 'Clear Sky')} (Feels like {weather.get('feels_like', weather.get('temperature', 28.0))}°C)
         </div>
         <div class="metric-grid">
             <div class="metric-box">
@@ -176,16 +176,25 @@ with st.sidebar:
                 <div class="metric-box-val">{weather.get('rainfall', 0.0)} mm</div>
             </div>
             <div class="metric-box">
+                <div class="metric-box-title">Pressure</div>
+                <div class="metric-box-val">{weather.get('pressure', 1012.0)} hPa</div>
+            </div>
+            <div class="metric-box">
                 <div class="metric-box-title">Wind</div>
                 <div class="metric-box-val">{weather.get('wind_speed', 5.0)} km/h</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-box-title">Rain Chance</div>
+                <div class="metric-box-val">{weather.get('rain_probability', 0)}%</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.caption(f"🤖 **RAG Knowledge Base:** 49 Guides (256 Chunks)")
-    st.caption(f"🧠 **Vision Model:** LightGBM + RF (OOD Enabled)")
+    st.caption(f"🤖 **RAG Knowledge Base:** 59 Guides (306 Chunks)")
+    st.caption(f"🧠 **Crop ML Model:** XGBoost + LightGBM (30 Crops)")
+    st.caption(f"👁️ **Vision Model:** 133 Features + OOD Domain Guard")
     st.caption(f"🛰️ **Weather Model:** Open-Meteo Global High-Res")
 
 # -------------------------------------------------------------
@@ -212,7 +221,7 @@ with tab1:
     
     with col_v1:
         st.subheader("📷 Live Soil Photo Verification")
-        st.write("Upload a soil photograph. The AI vision model extracts 133 multi-spectral color and spatial texture features, and runs an Out-of-Distribution (OOD) detector to reject non-soil photos.")
+        st.write("Upload a field soil photo. The AI vision model extracts 133 multi-spectral color and spatial texture features, and runs a strict Out-of-Distribution (OOD) detector to reject non-soil photos (posters, portraits, solid graphics).")
         
         uploaded_file = st.file_uploader("Upload Soil Photo (JPG, PNG, WEBP):", type=["jpg", "jpeg", "png", "webp"])
         
@@ -252,10 +261,13 @@ with tab1:
                 <div class="agri-card-alert">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                         <span style="font-size: 1.3rem;">⚠️</span>
-                        <b style="font-size: 1rem; color: #991b1b;">Non-Soil Image Detected (Out-of-Distribution)</b>
+                        <b style="font-size: 1rem; color: #991b1b;">Non-Soil Image Detected (Rejected)</b>
                     </div>
                     <p style="color: #7f1d1d; font-size: 0.85rem; margin: 0; line-height: 1.4;">
-                        {res.get('rejection_reason', 'The uploaded photo does not match natural soil or agricultural land characteristics.')}
+                        <b>Reason:</b> {res.get('rejection_reason', 'The uploaded photo does not match natural agricultural soil or field ground characteristics.')}
+                    </p>
+                    <p style="color: #991b1b; font-size: 0.78rem; margin-top: 6px; margin-bottom: 0;">
+                        💡 <i>Please upload an authentic photo of agricultural field soil or use the manual soil entry form on the right.</i>
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -291,6 +303,39 @@ with tab1:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
+                
+                # Active Soil Test Summary Card
+                st.markdown(f"""
+                <div class="agri-card" style="margin-top: 12px; background: #f8fafc; border: 1.5px solid #cbd5e1;">
+                    <b style="font-size: 0.92rem; color: #0f172a;">📊 Active Soil Test Profile (Auto-Synchronized):</b>
+                    <div class="metric-grid" style="margin-top: 6px;">
+                        <div class="metric-box">
+                            <div class="metric-box-title">Soil Type</div>
+                            <div class="metric-box-val" style="font-size: 1rem; color: #15803d;">{st.session_state.soil_data['soil_type']}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-box-title">Nitrogen (N)</div>
+                            <div class="metric-box-val">{st.session_state.soil_data['nitrogen']} kg/ha</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-box-title">Phosphorus (P)</div>
+                            <div class="metric-box-val">{st.session_state.soil_data['phosphorus']} kg/ha</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-box-title">Potassium (K)</div>
+                            <div class="metric-box-val">{st.session_state.soil_data['potassium']} kg/ha</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-box-title">Soil pH</div>
+                            <div class="metric-box-val">{st.session_state.soil_data['ph']}</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-box-title">Moisture</div>
+                            <div class="metric-box-val">{st.session_state.soil_data['moisture']}%</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Probability breakdown across all 7 classes
                 st.markdown("<div style='margin-top: 14px; font-weight: 700; font-size: 0.88rem; color: #166534;'>📊 Probability Distribution Across All 7 Soil Classes:</div>", unsafe_allow_html=True)
@@ -359,17 +404,121 @@ with tab1:
                     "sulphur": s_val,
                     "electrical_conductivity": ec_val
                 })
+                st.session_state.manual_soil_saved = True
                 st.success("✅ Soil chemistry parameters saved successfully!")
+                st.rerun()
+
+        # Display current active manual soil report
+        st.markdown(f"""
+        <div class="agri-card" style="margin-top: 10px; background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <b style="color: #1e293b; font-size: 0.95rem;">📋 Current Field Soil Status:</b>
+                <span class="badge-pill badge-green">{st.session_state.soil_data['soil_type']} Soil Active</span>
+            </div>
+            <div class="metric-grid">
+                <div class="metric-box">
+                    <div class="metric-box-title">N-P-K (kg/ha)</div>
+                    <div class="metric-box-val" style="font-size: 0.95rem;">{st.session_state.soil_data['nitrogen']:.0f} - {st.session_state.soil_data['phosphorus']:.0f} - {st.session_state.soil_data['potassium']:.0f}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-box-title">pH Reaction</div>
+                    <div class="metric-box-val">{st.session_state.soil_data['ph']:.1f}</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-box-title">Moisture</div>
+                    <div class="metric-box-val">{st.session_state.soil_data['moisture']:.0f}%</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-box-title">EC (dS/m)</div>
+                    <div class="metric-box-val">{st.session_state.soil_data['electrical_conductivity']:.1f}</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # =============================================================
 # TAB 2: Adaptive Crop Recommendation (ML Engine)
 # =============================================================
 with tab2:
-    st.subheader("🌾 Adaptive Precision Crop Recommendation")
-    st.write("Generates optimal crop suitability rankings using the trained ExtraTrees/RandomForest ML classifier, combining your soil test values with real-time Open-Meteo satellite weather.")
+    st.subheader("🌾 Step 2: Adaptive Precision Crop Recommendation")
+    st.write("Generates optimal crop suitability rankings using the trained Ensemble ML classifier (30 crops), combining your soil parameters with real-time Open-Meteo satellite weather.")
+    
+    # Check if Step 1 was executed
+    has_step1_vision = (st.session_state.cnn_result is not None and st.session_state.cnn_result.get("is_valid_soil", False))
+    has_step1_manual = st.session_state.get("manual_soil_saved", False)
+    
+    # Soil Selector Box (Allows user to select/confirm soil in Step 2 directly)
+    soil_options = ["Black", "Red", "Alluvial", "Laterite", "Arid", "Mountain", "Yellow", "Clayey", "Sandy"]
+    current_soil_type = st.session_state.soil_data.get("soil_type", "Black")
+    current_idx = soil_options.index(current_soil_type) if current_soil_type in soil_options else 0
+
+    st.markdown("""<div class="agri-card" style="background: #f8fafc; border: 1.5px solid #94a3b8; margin-bottom: 1rem;">""", unsafe_allow_html=True)
+    
+    col_t2_1, col_t2_2 = st.columns([2, 1])
+    with col_t2_1:
+        if not has_step1_vision and not has_step1_manual:
+            st.info("ℹ️ **No Step 1 Soil Test Run Yet**: Select your farm's preferred soil type below to auto-load regional baseline nutrients, or customize parameters in the expander.")
+        else:
+            st.success(f"✅ **Active Soil Type**: {current_soil_type} Soil (Configured from Step 1)")
+        
+        selected_soil_in_tab2 = st.selectbox(
+            "🌱 Which soil type is in your farm / field?",
+            soil_options,
+            index=current_idx,
+            key="tab2_preferred_soil"
+        )
+        if selected_soil_in_tab2 != current_soil_type:
+            st.session_state.soil_data["soil_type"] = selected_soil_in_tab2
+            soil_baselines = {
+                "Black": {"ph": 7.8, "nitrogen": 90.0, "phosphorus": 42.0, "potassium": 48.0, "moisture": 45.0, "zinc": 1.2, "sulphur": 15.0, "electrical_conductivity": 0.8},
+                "Alluvial": {"ph": 7.2, "nitrogen": 110.0, "phosphorus": 52.0, "potassium": 55.0, "moisture": 40.0, "zinc": 1.5, "sulphur": 18.0, "electrical_conductivity": 0.6},
+                "Red": {"ph": 6.2, "nitrogen": 75.0, "phosphorus": 35.0, "potassium": 50.0, "moisture": 30.0, "zinc": 0.9, "sulphur": 12.0, "electrical_conductivity": 0.4},
+                "Laterite": {"ph": 5.2, "nitrogen": 55.0, "phosphorus": 22.0, "potassium": 35.0, "moisture": 28.0, "zinc": 0.6, "sulphur": 8.0, "electrical_conductivity": 0.3},
+                "Arid": {"ph": 8.4, "nitrogen": 40.0, "phosphorus": 18.0, "potassium": 65.0, "moisture": 15.0, "zinc": 0.5, "sulphur": 25.0, "electrical_conductivity": 1.8},
+                "Mountain": {"ph": 5.6, "nitrogen": 85.0, "phosphorus": 30.0, "potassium": 45.0, "moisture": 50.0, "zinc": 1.1, "sulphur": 14.0, "electrical_conductivity": 0.4},
+                "Yellow": {"ph": 6.0, "nitrogen": 65.0, "phosphorus": 28.0, "potassium": 40.0, "moisture": 35.0, "zinc": 0.8, "sulphur": 10.0, "electrical_conductivity": 0.5},
+                "Clayey": {"ph": 7.4, "nitrogen": 95.0, "phosphorus": 40.0, "potassium": 45.0, "moisture": 50.0, "zinc": 1.0, "sulphur": 14.0, "electrical_conductivity": 0.7},
+                "Sandy": {"ph": 6.5, "nitrogen": 50.0, "phosphorus": 25.0, "potassium": 30.0, "moisture": 20.0, "zinc": 0.6, "sulphur": 10.0, "electrical_conductivity": 0.4}
+            }
+            if selected_soil_in_tab2 in soil_baselines:
+                st.session_state.soil_data.update(soil_baselines[selected_soil_in_tab2])
+            st.rerun()
+
+    with col_t2_2:
+        st.markdown(f"""
+        <div style="padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.82rem;">
+            <b>Active Nutrients for Model:</b><br>
+            • N: <b>{st.session_state.soil_data['nitrogen']:.0f}</b> kg/ha<br>
+            • P: <b>{st.session_state.soil_data['phosphorus']:.0f}</b> kg/ha<br>
+            • K: <b>{st.session_state.soil_data['potassium']:.0f}</b> kg/ha<br>
+            • pH: <b>{st.session_state.soil_data['ph']:.1f}</b> | Soil: <b>{st.session_state.soil_data['soil_type']}</b>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with st.expander("⚙️ Fine-Tune Soil Chemistry & Environmental Overrides (Optional)"):
+        col_o1, col_o2, col_o3 = st.columns(3)
+        with col_o1:
+            t2_n = st.number_input("Nitrogen (kg/ha)", value=float(st.session_state.soil_data["nitrogen"]), step=1.0, key="t2_n")
+            t2_ph = st.number_input("pH Level", value=float(st.session_state.soil_data["ph"]), step=0.1, key="t2_ph")
+        with col_o2:
+            t2_p = st.number_input("Phosphorus (kg/ha)", value=float(st.session_state.soil_data["phosphorus"]), step=1.0, key="t2_p")
+            t2_temp = st.number_input("Override Temp (°C)", value=float(weather.get("temperature", 28.0)), step=0.5, key="t2_temp")
+        with col_o3:
+            t2_k = st.number_input("Potassium (kg/ha)", value=float(st.session_state.soil_data["potassium"]), step=1.0, key="t2_k")
+            t2_hum = st.number_input("Override Humidity (%)", value=float(weather.get("humidity", 65.0)), step=1.0, key="t2_hum")
+        
+        if st.button("Apply Overrides", key="apply_overrides_btn"):
+            st.session_state.soil_data["nitrogen"] = t2_n
+            st.session_state.soil_data["phosphorus"] = t2_p
+            st.session_state.soil_data["potassium"] = t2_k
+            st.session_state.soil_data["ph"] = t2_ph
+            st.success("Overrides applied to active model!")
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
     
     if st.button("🚀 Generate Crop Recommendations", type="primary", use_container_width=True):
-        with st.spinner("Evaluating multi-crop agronomic suitability model..."):
+        with st.spinner(f"Evaluating 30-crop ML model for {st.session_state.city} ({st.session_state.soil_data['soil_type']} Soil)..."):
             manual_props = ManualSoilProperties(
                 nitrogen=st.session_state.soil_data["nitrogen"],
                 phosphorus=st.session_state.soil_data["phosphorus"],
@@ -407,7 +556,7 @@ with tab2:
                 <div class="{card_style}">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <h4 style="margin: 0; color: #1e293b;">{idx+1}. {crop_item['crop_name']}</h4>
-                        <span class="badge-pill {badge_style}">{(crop_item['confidence']*100):.1f}% Match</span>
+                        <span class="badge-pill {badge_style}">{(crop_item.get('suitability_score', crop_item.get('confidence', 0)*100)):.1f}% Match</span>
                     </div>
                     <p style="font-size: 0.82rem; color: #475569; margin: 4px 0;"><b>📅 Season:</b> {crop_item.get('recommended_season', 'Kharif / Rabi')}</p>
                     <p style="font-size: 0.82rem; color: #475569; margin: 4px 0;"><b>⏳ Duration:</b> {crop_item.get('growth_duration_days', 120)} Days</p>
@@ -418,7 +567,8 @@ with tab2:
                 
                 if st.button(f"👉 Select {crop_item['crop_name']} for Planning", key=f"select_{crop_item['crop_name']}", use_container_width=True):
                     st.session_state.selected_crop = crop_item["crop_name"]
-                    st.success(f"Selected {crop_item['crop_name']} as active crop!")
+                    st.success(f"Selected {crop_item['crop_name']} as active crop! Proceed to Tab 3 / Tab 4.")
+
 
 # =============================================================
 # TAB 3: Quantitative Fertilizer Deficit Calculator
