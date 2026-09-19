@@ -28,6 +28,66 @@ class WeatherService:
     }
 
     @classmethod
+    def detect_client_location(cls) -> Dict[str, Any]:
+        """
+        Automatically detects client / user geolocation from real-time IP lookup.
+        Fallback to standard Indian agro-climatic coordinates if offline.
+        """
+        try:
+            resp = requests.get("https://ipapi.co/json/", timeout=3.5)
+            if resp.status_code == 200:
+                data = resp.json()
+                city = data.get("city", "Hyderabad")
+                region = data.get("region", "")
+                country = data.get("country_name", "India")
+                lat = float(data.get("latitude", 17.3850))
+                lon = float(data.get("longitude", 78.4867))
+                loc_name = f"{city}, {region}" if region else f"{city}, {country}"
+                return {
+                    "city": loc_name,
+                    "city_raw": city,
+                    "region": region,
+                    "country": country,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "is_detected": True
+                }
+        except Exception as e:
+            print(f"[WeatherService] ipapi geolocation notice: {e}")
+
+        try:
+            resp = requests.get("http://ip-api.com/json/", timeout=3.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                city = data.get("city", "Hyderabad")
+                region = data.get("regionName", "")
+                country = data.get("country", "India")
+                lat = float(data.get("lat", 17.3850))
+                lon = float(data.get("lon", 78.4867))
+                loc_name = f"{city}, {region}" if region else f"{city}, {country}"
+                return {
+                    "city": loc_name,
+                    "city_raw": city,
+                    "region": region,
+                    "country": country,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "is_detected": True
+                }
+        except Exception as e:
+            print(f"[WeatherService] ip-api geolocation notice: {e}")
+
+        return {
+            "city": "Hyderabad, Telangana",
+            "city_raw": "Hyderabad",
+            "region": "Telangana",
+            "country": "India",
+            "latitude": 17.3850,
+            "longitude": 78.4867,
+            "is_detected": False
+        }
+
+    @classmethod
     def get_weather(cls, city: str = "Hyderabad", lat: float = None, lon: float = None) -> Dict[str, Any]:
         # 1. First Attempt: Real-time Live Open-Meteo Satellite API (No Key Required, 100% Live)
         try:
