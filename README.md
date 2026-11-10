@@ -166,5 +166,4 @@ uvicorn backend.app.main:app --reload --port 8000
 
 ---
 
-## 📄 Complete Implementation Research Paper
-For the full mathematical formulations, dataset distributions, feature extraction equations, and agronomic citations, see **[`paper.md`](paper.md)**.
+### ACCESS THE HOSTED PLATFORM AT: https://agro--ai.streamlit.app/
