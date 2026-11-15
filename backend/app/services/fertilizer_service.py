@@ -185,7 +185,7 @@ class FertilizerService:
             "recommended_fertilizers": recs[:4],
             "primary_fertilizer": predicted_fertilizer or recs[0],
             "soil_deficits": deficits,
-            "target_npk_ratio": f"{target['N']}:{target['P']}:{target['K']}",
+            "target_npk_ratio": f"{target['N']}:{target['P2O5']}:{target['K2O']} (N:P2O5:K2O, kg/ha)",
             "probabilities": probs_dict,
             "application_tips": custom_guide
         }
@@ -318,7 +318,7 @@ class FertilizerService:
             },
             "organic_alternatives": organic_advice,
             "micronutrient_advice": micro_advice,
-            "target_npk_ratio": base.get("target_npk_ratio", "120:60:60")
+            "target_npk_ratio": base.get("target_npk_ratio", "120:60:60 (N:P2O5:K2O, kg/ha)")
         }
 
 fertilizer_service = FertilizerService()
