@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
 from sklearn.metrics import accuracy_score, f1_score
@@ -88,11 +89,8 @@ def train_crop_model(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Fit preprocessing only on the training subset to avoid leakage.
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
+    # Scaling is fitted separately inside each CV fold through Pipeline.
+    # This prevents fold-validation observations from influencing scaling.
     base_models = {
         "RandomForest": RandomForestClassifier(
             n_estimators=250, max_depth=20, random_state=42, n_jobs=-1
@@ -125,9 +123,13 @@ def train_crop_model(
     print("-" * 73)
 
     for name, estimator in base_models.items():
+        cv_pipeline = Pipeline([
+            ("scaler", StandardScaler()),
+            ("classifier", clone(estimator))
+        ])
         scores = cross_validate(
-            estimator,
-            X_train_scaled,
+            cv_pipeline,
+            X_train,
             y_train,
             cv=cv,
             scoring=scoring,
@@ -164,9 +166,13 @@ def train_crop_model(
     )
 
     # Evaluate the ensemble with the same training-only CV protocol.
+    ensemble_pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("classifier", clone(ensemble))
+    ])
     ensemble_scores = cross_validate(
-        ensemble,
-        X_train_scaled,
+        ensemble_pipeline,
+        X_train,
         y_train,
         cv=cv,
         scoring=scoring,
@@ -198,8 +204,11 @@ def train_crop_model(
     )
     best_model = clone(candidate_estimators[best_name])
 
-    # Refit the selected estimator on all training data, then evaluate once
-    # on the independent test subset.
+    # Fit the deployment scaler on all training data, then fit the selected
+    # model and evaluate once on the independent held-out test subset.
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     best_model.fit(X_train_scaled, y_train)
     test_predictions = best_model.predict(X_test_scaled)
     test_accuracy = accuracy_score(y_test, test_predictions)
