@@ -246,8 +246,8 @@ class FertilizerService:
 
         target = self.crop_npk_targets.get(crop_clean, {"N": 100, "P2O5": 50, "K2O": 50})
         n_def = max(0.0, target["N"] - n)
-        p_def = max(0.0, target["P"] - p)
-        k_def = max(0.0, target["K"] - k)
+        p_def = max(0.0, target["P2O5"] - p)
+        k_def = max(0.0, target["K2O"] - k)
 
         # Trigger thresholds: N >20, P2O5 >15, K2O >20 kg/ha.
         # Fertilizer grades are expressed as N-P2O5-K2O.
