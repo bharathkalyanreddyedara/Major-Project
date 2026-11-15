@@ -11,42 +11,42 @@ class FertilizerService:
         self.bundle = None
         self.load_model()
 
-        # Authoritative NPK nutrient uptake targets (kg/ha) per crop from ICAR & State Agricultural Universities
+        # Crop targets: N (kg/ha), available P expressed as P2O5 (kg/ha), and available K expressed as K2O (kg/ha). Verify crop-specific values against local recommendations before field use.
         self.crop_npk_targets = {
-            "Rice": {"N": 120, "P": 60, "K": 60},
-            "Wheat": {"N": 120, "P": 60, "K": 40},
-            "Barley": {"N": 80, "P": 40, "K": 30},
-            "Cotton": {"N": 150, "P": 60, "K": 60},
-            "Maize": {"N": 120, "P": 60, "K": 50},
-            "Sugarcane": {"N": 250, "P": 100, "K": 120},
-            "Groundnut": {"N": 25, "P": 50, "K": 40},
-            "Groundnuts": {"N": 25, "P": 50, "K": 40},
-            "Millets": {"N": 60, "P": 30, "K": 30},
-            "Sorghum": {"N": 80, "P": 40, "K": 40},
-            "Pomegranate": {"N": 200, "P": 100, "K": 150},
-            "Pulses": {"N": 20, "P": 40, "K": 20},
-            "Chickpea": {"N": 25, "P": 50, "K": 25},
-            "Kidneybeans": {"N": 30, "P": 60, "K": 30},
-            "Pigeonpeas": {"N": 25, "P": 50, "K": 25},
-            "Mothbeans": {"N": 20, "P": 40, "K": 20},
-            "Mungbean": {"N": 20, "P": 40, "K": 20},
-            "Blackgram": {"N": 20, "P": 40, "K": 20},
-            "Lentil": {"N": 20, "P": 40, "K": 20},
-            "Coffee": {"N": 140, "P": 90, "K": 120},
-            "Jute": {"N": 80, "P": 40, "K": 40},
-            "Coconut": {"N": 500, "P": 320, "K": 1200},
-            "Apple": {"N": 70, "P": 35, "K": 70},
-            "Orange": {"N": 120, "P": 60, "K": 100},
-            "Papaya": {"N": 200, "P": 200, "K": 250},
-            "Banana": {"N": 200, "P": 60, "K": 300},
-            "Mango": {"N": 100, "P": 50, "K": 100},
-            "Grapes": {"N": 150, "P": 100, "K": 200},
-            "Watermelon": {"N": 100, "P": 60, "K": 80},
-            "Muskmelon": {"N": 80, "P": 50, "K": 70},
-            "Tomato": {"N": 150, "P": 100, "K": 150},
-            "Potato": {"N": 180, "P": 100, "K": 150},
-            "Mustard": {"N": 80, "P": 40, "K": 40},
-            "Soybean": {"N": 25, "P": 60, "K": 40}
+            "Rice": {"N": 120, "P2O5": 60, "K2O": 60},
+            "Wheat": {"N": 120, "P2O5": 60, "K2O": 40},
+            "Barley": {"N": 80, "P2O5": 40, "K2O": 30},
+            "Cotton": {"N": 150, "P2O5": 60, "K2O": 60},
+            "Maize": {"N": 120, "P2O5": 60, "K2O": 50},
+            "Sugarcane": {"N": 250, "P2O5": 100, "K2O": 120},
+            "Groundnut": {"N": 25, "P2O5": 50, "K2O": 40},
+            "Groundnuts": {"N": 25, "P2O5": 50, "K2O": 40},
+            "Millets": {"N": 60, "P2O5": 30, "K2O": 30},
+            "Sorghum": {"N": 80, "P2O5": 40, "K2O": 40},
+            "Pomegranate": {"N": 200, "P2O5": 100, "K2O": 150},
+            "Pulses": {"N": 20, "P2O5": 40, "K2O": 20},
+            "Chickpea": {"N": 25, "P2O5": 50, "K2O": 25},
+            "Kidneybeans": {"N": 30, "P2O5": 60, "K2O": 30},
+            "Pigeonpeas": {"N": 25, "P2O5": 50, "K2O": 25},
+            "Mothbeans": {"N": 20, "P2O5": 40, "K2O": 20},
+            "Mungbean": {"N": 20, "P2O5": 40, "K2O": 20},
+            "Blackgram": {"N": 20, "P2O5": 40, "K2O": 20},
+            "Lentil": {"N": 20, "P2O5": 40, "K2O": 20},
+            "Coffee": {"N": 140, "P2O5": 90, "K2O": 120},
+            "Jute": {"N": 80, "P2O5": 40, "K2O": 40},
+            "Coconut": {"N": 500, "P2O5": 320, "K2O": 1200},
+            "Apple": {"N": 70, "P2O5": 35, "K2O": 70},
+            "Orange": {"N": 120, "P2O5": 60, "K2O": 100},
+            "Papaya": {"N": 200, "P2O5": 200, "K2O": 250},
+            "Banana": {"N": 200, "P2O5": 60, "K2O": 300},
+            "Mango": {"N": 100, "P2O5": 50, "K2O": 100},
+            "Grapes": {"N": 150, "P2O5": 100, "K2O": 200},
+            "Watermelon": {"N": 100, "P2O5": 60, "K2O": 80},
+            "Muskmelon": {"N": 80, "P2O5": 50, "K2O": 70},
+            "Tomato": {"N": 150, "P2O5": 100, "K2O": 150},
+            "Potato": {"N": 180, "P2O5": 100, "K2O": 150},
+            "Mustard": {"N": 80, "P2O5": 40, "K2O": 40},
+            "Soybean": {"N": 25, "P2O5": 60, "K2O": 40}
         }
 
         # Crop-specific agronomic application guidelines & split-dose schedules
@@ -148,10 +148,10 @@ class FertilizerService:
                 print(f"[FertilizerService] ML inference note: {e}")
 
         # 2. Dynamic Agronomic Nutrient Deficit Calculations
-        target = self.crop_npk_targets.get(crop_clean, {"N": 100, "P": 50, "K": 50})
+        target = self.crop_npk_targets.get(crop_clean, {"N": 100, "P2O5": 50, "K2O": 50})
         n_deficit = max(0.0, target["N"] - n)
-        p_deficit = max(0.0, target["P"] - p)
-        k_deficit = max(0.0, target["K"] - k)
+        p_deficit = max(0.0, target["P2O5"] - p)
+        k_deficit = max(0.0, target["K2O"] - k)
 
         deficits = []
         if n_deficit > 20:
@@ -169,7 +169,7 @@ class FertilizerService:
         if predicted_fertilizer:
             recs.append(f"{predicted_fertilizer} (ML Primary Match)")
 
-        if p_deficit > 20 and "DAP" not in [r.split()[0] for r in recs]:
+        if p_deficit > 15 and "DAP" not in [r.split()[0] for r in recs]:
             recs.append("DAP (Di-Ammonium Phosphate)")
         if n_deficit > 20 and "Urea" not in [r.split()[0] for r in recs]:
             recs.append("Urea (Top-dressing)")
@@ -244,17 +244,31 @@ class FertilizerService:
             moisture=moist
         )
 
-        target = self.crop_npk_targets.get(crop_clean, {"N": 100, "P": 50, "K": 50})
+        target = self.crop_npk_targets.get(crop_clean, {"N": 100, "P2O5": 50, "K2O": 50})
         n_def = max(0.0, target["N"] - n)
         p_def = max(0.0, target["P"] - p)
         k_def = max(0.0, target["K"] - k)
 
-        # Quantitative commercial 50kg bag calculations (ICAR conversion formulas)
-        # Urea = 46% N; DAP = 46% P2O5, 18% N; MOP = 60% K2O; SSP = 16% P2O5
-        urea_bags = round((n_def / 0.46) / 50.0, 1) if n_def > 0 else 0.0
-        dap_bags = round((p_def / 0.46) / 50.0, 1) if p_def > 0 else 0.0
-        mop_bags = round((k_def / 0.60) / 50.0, 1) if k_def > 0 else 0.0
-        ssp_bags = round((p_def / 0.16) / 50.0, 1) if p_def > 0 else 0.0
+        # Trigger thresholds: N >20, P2O5 >15, K2O >20 kg/ha.
+        # Fertilizer grades are expressed as N-P2O5-K2O.
+        n_triggered = n_def > 20.0
+        p_triggered = p_def > 15.0
+        k_triggered = k_def > 20.0
+
+        # DAP (18-46-0) supplies both P2O5 and N. Credit its N contribution
+        # before calculating the additional urea requirement.
+        dap_product_kg_ha = (p_def / 0.46) if p_triggered else 0.0
+        dap_n_contribution = dap_product_kg_ha * 0.18
+        remaining_n_after_dap = max(0.0, n_def - dap_n_contribution)
+        urea_product_kg_ha = (remaining_n_after_dap / 0.46) if n_triggered else 0.0
+        mop_product_kg_ha = (k_def / 0.60) if k_triggered else 0.0
+        ssp_product_kg_ha = (p_def / 0.16) if p_triggered else 0.0
+
+        # DAP and SSP are alternative phosphorus sources, not additive doses.
+        urea_bags = round(urea_product_kg_ha / 50.0, 1)
+        dap_bags = round(dap_product_kg_ha / 50.0, 1)
+        mop_bags = round(mop_product_kg_ha / 50.0, 1)
+        ssp_bags = round(ssp_product_kg_ha / 50.0, 1)
 
         # Crop-aware micronutrient & pH amendment alerts
         micro_advice = {}
@@ -291,10 +305,11 @@ class FertilizerService:
             "recommended_fertilizers": base.get("recommended_fertilizers", []),
             "application_guidelines": base.get("application_tips"),
             "dosage_kg_per_ha": {
-                "nitrogen_deficit_kg_ha": int(n_def),
-                "phosphorus_deficit_kg_ha": int(p_def),
-                "potassium_deficit_kg_ha": int(k_def)
+                "nitrogen_deficit_kg_ha": round(n_def, 1),
+                "phosphorus_deficit_as_P2O5_kg_ha": round(p_def, 1),
+                "potassium_deficit_as_K2O_kg_ha": round(k_def, 1)
             },
+            "fertilizer_product_rates_kg_ha": {"urea": round(urea_product_kg_ha, 1), "dap": round(dap_product_kg_ha, 1), "mop": round(mop_product_kg_ha, 1), "ssp_alternative_to_dap": round(ssp_product_kg_ha, 1)},
             "commercial_bags_recommended": {
                 "urea_50kg_bags": urea_bags,
                 "dap_50kg_bags": dap_bags,
