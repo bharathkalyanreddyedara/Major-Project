@@ -11,9 +11,9 @@ class SoilAnalysisResponse(BaseModel):
     visual_features: Dict[str, Any] = {}
 
 class ManualSoilProperties(BaseModel):
-    nitrogen: float = Field(..., description="Nitrogen content (N) in kg/ha or ppm", example=90.0)
-    phosphorus: float = Field(..., description="Phosphorus content (P) in kg/ha or ppm", example=42.0)
-    potassium: float = Field(..., description="Potassium content (K) in kg/ha or ppm", example=43.0)
+    nitrogen: float = Field(..., description="Available nitrogen (N) in kg/ha; enter the value reported by the soil laboratory", example=90.0)
+    phosphorus: float = Field(..., description="Available phosphorus expressed as P2O5 in kg/ha; enter the value in the stated P2O5 convention", example=42.0)
+    potassium: float = Field(..., description="Available potassium expressed as K2O in kg/ha; enter the value in the stated K2O convention", example=43.0)
     ph: float = Field(..., description="Soil pH level (0-14)", example=6.5)
     soil_type: Optional[str] = Field(None, description="Soil Type (e.g. Red, Black, Sandy, Clayey, Alluvial)", example="Black")
     moisture: Optional[float] = Field(45.0, description="Soil moisture percentage")
